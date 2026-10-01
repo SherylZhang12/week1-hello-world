@@ -47,14 +47,15 @@ export default function AvatarUpload() {
   }
 
   return (
-    <form onSubmit={upload} className="flex flex-col gap-4">
-      <label>Choose a profile photo (JPG, PNG, or WebP, up to 5 MB)
-        <input className="mt-2 block" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} />
+    <form onSubmit={upload} className="upload-form" aria-busy={busy}>
+      <label className="upload-zone">Choose a profile photo
+        <span className="upload-help">JPG, PNG, or WebP · Up to 5 MB</span>
+        <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} />
       </label>
-      <button type="submit" disabled={busy} className="w-fit rounded bg-foreground px-5 py-2 text-background disabled:opacity-50">
+      <button type="submit" disabled={busy} className="button button-outline">
         {busy ? "Uploading…" : "Upload photo"}
       </button>
-      {message && <p role="status">{message}</p>}
+      {message && <p role="status" className="upload-message">{message}</p>}
     </form>
   );
 }
