@@ -5,7 +5,30 @@ export default function FoodArt({ name, className = "" }: { name: string; classN
     <ellipse cx="200" cy="249" rx="128" ry="17" fill="#432c2014" />
     <ellipse cx="200" cy="162" rx="143" ry="98" fill="#fdfbf5" stroke="#e3dac8" strokeWidth="2" />
     <ellipse cx="200" cy="162" rx="118" ry="79" fill="#f5f0e5" stroke="#e8dfcd" strokeWidth="2" />
-    {kind.includes("sushi") ? <>
+    {kind.includes("pizza") ? <>
+      <path d="M108 91 Q200 50 292 91 L200 237 Z" fill="#edb65a" stroke="#cb9145" strokeWidth="5" />
+      <path d="M116 104 Q200 68 284 104 L200 218 Z" fill="#f7d078" />
+      <path d="M108 91 Q200 50 292 91" fill="none" stroke="#c68a40" strokeWidth="18" strokeLinecap="round" />
+      {[[160,113],[228,110],[199,163],[229,146],[184,196]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r="12" fill="#b94f32" />)}
+      <path d="M176 124q-14-20-23-1 6 15 23 1M239 176q15-20 23-1-6 15-23 1" fill="#758c50" />
+    </> : kind.includes("coffee") ? <>
+      <ellipse cx="195" cy="212" rx="84" ry="22" fill="#ded5c1" />
+      <path d="M250 126h21q34 0 24 36t-40 25" fill="none" stroke="#b94724" strokeWidth="14" />
+      <path d="M132 117h125l-10 75q-6 28-53 28t-53-28Z" fill="#b94724" />
+      <ellipse cx="194" cy="117" rx="63" ry="23" fill="#fff7e8" /><ellipse cx="194" cy="118" rx="52" ry="16" fill="#79503b" />
+      <path d="M164 77q-15-15 0-32M194 72q-15-15 0-32M224 77q-15-15 0-32" stroke="#c6b79e" strokeWidth="4" fill="none" strokeLinecap="round" />
+    </> : kind.includes("bagel") ? <>
+      <ellipse cx="200" cy="171" rx="92" ry="62" fill="#bb7b39" /><ellipse cx="200" cy="159" rx="92" ry="62" fill="#e1a655" />
+      <ellipse cx="200" cy="157" rx="29" ry="20" fill="#f5f0e5" stroke="#bc803c" strokeWidth="8" />
+      {[[142,139],[155,185],[218,111],[255,155],[238,188],[173,115],[125,158]].map(([x,y],i)=><path key={i} d={`M${x} ${y}l5 3`} stroke="#fff1cf" strokeWidth="4" strokeLinecap="round" />)}
+    </> : kind.includes("ramen") ? <>
+      <path d="M91 143q8 95 109 101 101-6 109-101Z" fill="#b94724" /><ellipse cx="200" cy="143" rx="109" ry="52" fill="#e9bb76" stroke="#954329" strokeWidth="7" />
+      {[0,1,2,3].map(i=><path key={i} d={`M${130+i*12} 140q25-38 66-10t45 21-73 17`} fill="none" stroke="#fff0bd" strokeWidth="6" strokeLinecap="round" />)}
+      <ellipse cx="249" cy="125" rx="24" ry="17" fill="#fff8df" transform="rotate(22 249 125)" /><ellipse cx="249" cy="125" rx="11" ry="10" fill="#eaaa37" />
+      <path d="M113 137q4-30 21-18 18-20 21 5-12 28-42 13" fill="#69834d" /><path d="M285 83 164 189M297 89 176 195" stroke="#875c3c" strokeWidth="5" strokeLinecap="round" />
+    </> : kind.includes("tacos") ? <>
+      {[0,1].map(i=><g key={i} transform={`translate(${i*68} ${i*36})`}><path d="M106 158q52-116 124 0Z" fill="#eab760" stroke="#cd9845" strokeWidth="5" /><path d="M112 150q25-57 49-38t61 35" stroke="#708647" strokeWidth="17" fill="none" /><path d="M117 163q40-101 106 0Z" fill="#f4cd78" />{[0,1,2,3].map(j=><circle key={j} cx={137+j*21} cy={130+(j%2)*8} r="6" fill="#c45f3c" />)}</g>)}
+    </> : kind.includes("sushi") ? <>
       {[{x:119,y:122,r:-16},{x:201,y:111,r:9},{x:160,y:181,r:-12},{x:241,y:173,r:13}].map((p,i)=><g key={i} transform={`translate(${p.x} ${p.y}) rotate(${p.r})`}>
         <rect x="-34" y="-4" width="71" height="40" rx="16" fill="#e6ddca" /><rect x="-35" y="-14" width="72" height="39" rx="17" fill="#fffefa" />
         <path d="M-42-12 Q-37-30-19-30 H22 Q41-28 44-8 L35 5 Q-2-1-35 8Z" fill="#ed8961" />

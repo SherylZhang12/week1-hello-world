@@ -157,3 +157,54 @@ h1, h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
   .members-main { padding: 35px 0; }.members-panel { padding: 35px 24px; }.members-panel h1 { font-size: 34px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; } }
+/* Week 4: community captions, in the existing Foodfolio design system. */
+.caption-hero { display:grid; grid-template-columns:1.25fr 1fr; gap:65px; align-items:center; padding:58px 0; }
+.caption-hero h1 { font-size:clamp(36px,4.3vw,58px); line-height:1.12; letter-spacing:-2px; margin-bottom:22px; }
+.caption-hero h1 em { color:var(--orange); }
+.daily-card { position:relative; background:#e9ecdD; border:1px solid #d9dec9; border-radius:18px; padding:30px; transform:rotate(2deg); }
+.daily-card h2 { font-size:28px; line-height:1.3; max-width:330px; }
+.daily-card p:not(.eyebrow) { font-size:12px; color:#606c50; }
+.daily-card .eyebrow { color:#606c50; padding-right:25px; }
+.daily-icon { position:absolute; right:22px; top:16px; color:#73835b; font-size:35px; }
+.caption-layout { display:grid; grid-template-columns:minmax(270px,360px) minmax(0,1fr); gap:32px; align-items:start; padding-top:32px; border-top:1px solid var(--line); }
+.generator-panel { position:sticky; top:24px; padding:28px; }
+.generator-panel h2 { font-size:30px; letter-spacing:-.8px; margin-bottom:10px; }
+.generator-intro { font-size:13px; color:var(--muted); }
+.caption-form textarea, .caption-form select { font:inherit; display:block; width:100%; border:1px solid #d9d0c1; border-radius:8px; padding:11px; background:#fffefb; color:var(--foreground); margin-top:8px; }
+.caption-form textarea { resize:vertical; min-height:120px; font-size:13px; line-height:1.65; }
+.caption-form select { font-size:12px; font-weight:400; }
+.caption-form .form-row { gap:12px; margin:18px 0 24px; }
+.caption-form .button { width:100%; gap:12px; }
+.caption-form > .upload-help { margin-top:12px; }
+.prompt-pick { display:flex; flex-wrap:wrap; align-items:center; gap:7px; font-size:11px; margin:20px 0; color:var(--muted); }
+.text-link:is(button) { border:0; background:transparent; padding:0; color:inherit; cursor:pointer; }
+.generator-gate { text-align:center; padding:8px 0; }
+.generator-gate svg { width:200px; margin:auto; }
+.generator-gate h3 { font:26px Georgia,serif; margin-bottom:12px; }
+.generator-gate p { color:var(--muted); font-size:13px; }
+.feed-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+.feed-tabs a { padding:8px 16px; border:1px solid var(--line); border-radius:30px; text-decoration:none; font-size:12px; }
+.feed-tabs a[aria-current=page] { background:var(--foreground); color:#fffaf4; border-color:var(--foreground); }
+.caption-feed { list-style:none; margin:0; padding:0; display:grid; gap:20px; }
+.caption-card { border:1px solid var(--line); border-radius:16px; padding:24px; background:#fffcf7; min-width:0; }
+.caption-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.caption-card-top time { color:var(--muted); font-size:11px; }
+.caption-content { display:grid; grid-template-columns:100px minmax(0,1fr); gap:22px; align-items:center; margin:22px 0; }
+.caption-art { background:#efe5cf; border-radius:14px; text-align:center; padding:8px; }
+.food-tone-1 .caption-art { background:#f4e2d5; }.food-tone-2 .caption-art { background:#e7eadc; }
+.caption-art svg { width:100%; }.caption-art span { font-size:9px; text-transform:uppercase; letter-spacing:1px; }
+.caption-content blockquote { margin:0; font:23px/1.4 Georgia,serif; overflow-wrap:anywhere; }
+.caption-details { color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.caption-details summary { cursor:pointer; }.caption-details p { margin-top:12px; }
+.caption-details pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#f4efe4; padding:12px; border-radius:8px; font-size:11px; }
+.caption-card-actions { display:flex; justify-content:space-between; align-items:center; margin:16px 0; }
+.copy-caption { font-size:11px; }
+.vote-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:17px; border-top:1px solid var(--line); }
+.caption-score { display:flex; align-items:baseline; gap:8px; }.caption-score strong { font-size:22px; }.caption-score small { color:var(--muted); font-size:11px; }
+.vote-buttons { display:flex; gap:8px; }.vote-buttons button { border:1px solid #d9d0c1; border-radius:8px; padding:8px 12px; background:#fffefb; font-size:12px; min-height:40px; }
+.vote-buttons button[aria-pressed=true] { background:#b94724; color:white; border-color:#b94724; }
+.vote-status { font-size:11px; color:var(--muted); margin:5px 0 0; min-height:17px; }
+.feed-note { color:var(--muted); font-size:11px; margin-top:20px; }
+.empty-feed { text-align:center; padding:45px 25px; }.empty-feed > span { color:var(--orange); font-size:35px; }.empty-feed h3 { font:25px Georgia,serif; margin-top:15px; }.empty-feed p { font-size:13px; color:var(--muted); }
+@media(max-width:900px) { .caption-hero { gap:30px; }.caption-layout { grid-template-columns:minmax(240px,300px) minmax(0,1fr); gap:20px; }.generator-panel { padding:22px; }.caption-content { grid-template-columns:75px minmax(0,1fr); gap:14px; }.caption-content blockquote { font-size:21px; } }
+@media(max-width:640px) { .caption-hero { grid-template-columns:1fr; padding:35px 0; gap:28px; }.caption-hero h1 { font-size:42px; }.daily-card { transform:none; padding:24px; }.daily-card h2 { font-size:25px; }.caption-layout { grid-template-columns:1fr; gap:30px; }.generator-panel { position:static; }.caption-card { padding:20px; }.caption-content { grid-template-columns:75px minmax(0,1fr); }.vote-row { flex-wrap:wrap; }.caption-form .form-row { grid-template-columns:1fr 1fr; } }
