@@ -17,9 +17,9 @@ export default async function Home() {
     <main id="main-content">
       <section className="hero">
         <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> YOUR FOOD. THE CHEF’S VERDICT.</p>
-          <h1>“Gordon Ramsay”<br /><em>式评价你的美食</em></h1>
+          <h1>Gordon Ramsay-style<br /><em>food critiques.</em></h1>
           <p className="hero-description">Upload your real meal. Get original Gordon Ramsay-style AI commentary: fiery roasts, hard-earned compliments, and a verdict worth sharing.</p>
-          <p className="chef-disclosure">AI 风格模仿 · 非 Gordon Ramsay 本人评价或背书</p><Link href="/captions" className="button">Enter the kitchen <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
+          <p className="chef-disclosure">AI style imitation. Not Gordon Ramsay’s actual review or endorsement.</p><Link href="/captions" className="button">Enter the kitchen <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
           <div className="hero-note"><span aria-hidden="true">✳</span> From around the world, with love.</div>
         </div>
         <div className="hero-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" />

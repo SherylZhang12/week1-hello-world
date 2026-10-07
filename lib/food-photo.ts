@@ -1,6 +1,6 @@
 export const PERSONAS = ["Gordon Ramsay"] as const;
 export const REPLY_STYLES = ["Roast", "Hype", "Roast then hype"] as const;
-export const POST_LANGUAGES = ["English", "中文"] as const;
+export const POST_LANGUAGES = ["English"] as const;
 export const NEIGHBORHOODS = ["Morningside Heights", "Upper West Side", "Midtown", "East Village", "Lower East Side", "Chinatown", "Brooklyn", "Queens", "Other / home"] as const;
 export function ownedPhotoPath(path: string, userId: string) {
   return path.startsWith(`${userId}/`) && /^[a-zA-Z0-9-]+\/[0-9a-f-]{36}\.jpg$/.test(path);

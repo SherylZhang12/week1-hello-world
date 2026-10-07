@@ -1,10 +1,10 @@
-# Foodfolio — “Gordon Ramsay”式评价你的美食
+# Foodfolio — Gordon Ramsay-style food critiques
 
 ## Product
 
-Real food photo → Gordon Ramsay-style commentary → Roast, Hype, or Roast then hype → English or 中文 → AI writes an original short chef critique → private preview → publish → community votes, bookmarks and shares.
+Real food photo → Gordon Ramsay-style commentary → Roast, Hype, or Roast then hype → English → AI writes an original short chef critique → private preview → publish → community votes, bookmarks and shares.
 
-The named style is Gordon Ramsay: punchy sentences, dramatic rhetorical questions, culinary metaphors, fiery roasts and hard-earned praise. The homepage and community page explicitly display “Gordon Ramsay”式评价你的美食. Both pages and each critique label the output as AI style imitation, not his real review or endorsement. Copied critiques carry the same attribution. The prompt forbids claiming to be him or copying show dialogue, and critiques only visible presentation plus supplied context; it must not infer taste, doneness or safety from a photo. A new reaction mode appears daily at New York midnight. Newest/weekly rankings and user-supplied restaurant/area bookmarks support discovery. Validate these engagement hypotheses with the PM.
+The named style is Gordon Ramsay: punchy sentences, dramatic rhetorical questions, culinary metaphors, fiery roasts and hard-earned praise. The homepage and community page explicitly display Gordon Ramsay-style food critiques. Both pages and each critique label the output as AI style imitation, not his real review or endorsement. Copied critiques carry the same attribution. The prompt forbids claiming to be him or copying show dialogue, and critiques only visible presentation plus supplied context; it must not infer taste, doneness or safety from a photo. A new reaction mode appears daily at New York midnight. Newest/weekly rankings and user-supplied restaurant/area bookmarks support discovery. Validate these engagement hypotheses with the PM.
 
 AI generates text only. Photos are the users’ real uploads. There is no active image-generation call in the creation flow. `gemini-2.5-flash-lite` has free-tier image input/text output, subject to account availability and quotas. Do not enable billing for this version. Official pricing: https://ai.google.dev/gemini-api/docs/pricing#gemini-2.5-flash-lite
 
@@ -14,7 +14,7 @@ AI generates text only. Photos are the users’ real uploads. There is no active
 bash /Users/mac/.codex/.chatgpt-projects/g-p-6abd8d4db1388191bcff0fb3f7631307/week4-rating/scripts/apply-week4.sh
 ```
 
-The script checks your original checkout is clean and still at the miniature-animal commit `dadb6e5`, copies the changes, runs lint/tests/build, then commits and pushes. If your checkout has changed, it stops for review. It never copies credentials.
+The script checks your original checkout is clean and still at the Gordon Ramsay commit `1f4de7b`, copies the changes, runs lint/tests/build, then commits and pushes. If your checkout has changed, it stops for review. It never copies credentials.
 
 ## Configure
 
@@ -38,4 +38,19 @@ Uploads are resized/re-encoded to strip EXIF before Gemini input. Generation err
 
 Tests cover authentication, photo ownership, first vote insert, duplicate update, denied writes, private prompt storage, text-only provider requests with actual image input, persona/style/language forwarding, invalid inputs, blocked/malformed output and daily rollover. Mocked checks do not prove live key access or RLS. Browser visual validation remains pending.
 
-Live checklist: generate Roast and Hype modes using a real food photo; confirm attribution on pages, cards and copied text; test Chinese and English; ensure previews are private before publication; publish and vote from two accounts; verify vote count stays at one on change; ensure another user cannot read or modify private rows; test bookmarks, copy and share; confirm Week 3 profile/avatar/OAuth; inspect RLS on any extra existing tables; verify Incognito access; obtain real PM feedback and implement relevant improvements before submitting.
+Live checklist: generate Roast and Hype modes using a real food photo; confirm attribution on pages, cards and copied text; verify English-only UI and generated commentary; ensure previews are private before publication; publish and vote from two accounts; verify vote count stays at one on change; ensure another user cannot read or modify private rows; test bookmarks, copy and share; confirm Week 3 profile/avatar/OAuth; inspect RLS on any extra existing tables; verify Incognito access; obtain real PM feedback and implement relevant improvements before submitting.
+
+## Login redirect configuration
+
+The application sends Google OAuth back to the current website origin at `/auth/callback`. Supabase must allow that exact callback, otherwise sign-in may fall back to the project Site URL (previously localhost). This is a dashboard setting, not fixed by translating the UI.
+
+In Supabase Authentication → URL Configuration:
+
+- Set Site URL to the production website root. For the currently visited deployment: `https://week1-hello-world-lzpwwq68y-sheryl7.vercel.app`. Replace with the stable production domain from Vercel once confirmed.
+- Add `https://week1-hello-world-lzpwwq68y-sheryl7.vercel.app/auth/callback` to Redirect URLs for the current deployment.
+- To support future commit URLs of this same project, add `https://week1-hello-world-*-sheryl7.vercel.app/auth/callback`. This limits the wildcard to the same project/account and the exact callback path.
+- Keep `http://localhost:3000/auth/callback` for local development if needed.
+
+After saving, start a NEW Google login on the online site. Do not reuse an old authorization URL or copy its one-time code between domains. URL Configuration changes apply without a new app deployment; English UI changes require the new commit deployment.
+
+Reference: https://supabase.com/docs/guides/auth/redirect-urls

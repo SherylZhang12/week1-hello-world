@@ -1,7 +1,7 @@
 "use client";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { createCaption, rateCaption, publishPhoto, savePhoto } from "./actions";
-import { REPLY_STYLES, POST_LANGUAGES, NEIGHBORHOODS } from "@/lib/food-photo";
+import { REPLY_STYLES, NEIGHBORHOODS } from "@/lib/food-photo";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
@@ -50,9 +50,9 @@ export function Generator({ challenge }: { challenge: { persona: string; style: 
     <label className="field">Place name (optional)<input name="restaurant" maxLength={100} placeholder="Restaurant, café, or your own kitchen" disabled={busy} /></label>
     <label className="field">Neighborhood<select name="neighborhood" defaultValue="Other / home" disabled={busy}>{NEIGHBORHOODS.map(n => <option key={n}>{n}</option>)}</select></label>
     <input type="hidden" name="tone" value="Gordon Ramsay" />
-    <div className="chef-identity"><span aria-hidden="true">👨‍🍳</span><strong>“Gordon Ramsay”式评价你的美食</strong><small>AI 风格模仿 · 非本人点评</small></div>
-    <label className="field">03 · Choose the heat<select name="reply_style" value={replyStyle} onChange={e => setReplyStyle(e.target.value)} disabled={busy}>{REPLY_STYLES.map(a => <option key={a} value={a}>{({Roast:"Full roast · 火力全开",Hype:"Chef approved · 主厨放行", "Roast then hype":"Roast then praise · 先损后夸"})[a]}</option>)}</select></label>
-    <label className="field">Post language<select name="language" defaultValue="English" disabled={busy}>{POST_LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></label>
+    <div className="chef-identity"><span aria-hidden="true">👨‍🍳</span><strong>Gordon Ramsay-style food critiques</strong><small>AI style imitation. Not his actual review.</small></div>
+    <label className="field">03 · Choose the heat<select name="reply_style" value={replyStyle} onChange={e => setReplyStyle(e.target.value)} disabled={busy}>{REPLY_STYLES.map(a => <option key={a} value={a}>{({Roast:"Full roast",Hype:"Chef approved", "Roast then hype":"Roast then praise"})[a]}</option>)}</select></label>
+    <input type="hidden" name="language" value="English" />
     <button type="button" className="text-link daily-pick" disabled={busy} onClick={() => { setReplyStyle(challenge.style); }}>Try today’s mode: {challenge.style} ↗</button>
     <p className="companion-note">Your dish enters the kitchen. The chef has opinions.</p>
     <p className="upload-help">Your photo and story go to Google Gemini to write original Gordon Ramsay-style commentary. The draft stays private until you publish.</p>
@@ -99,5 +99,5 @@ export function CopyCaption({ caption }: { caption: string }) {
 }
 
 export function ChefPost({ original, dish, caption }: { original?: string; dish: string; caption: string }) {
-  return <div className="pet-post"><div className="food-photo-frame">{original ? <Image unoptimized src={original} width={1000} height={1000} alt={`Real food photo: ${dish}`} /> : <div className="photo-unavailable">Photo unavailable</div>}</div><div className="pet-message"><div className="pet-message-header"><span aria-hidden="true" className="pet-avatar">👨‍🍳</span><span><strong>Gordon Ramsay-style critique</strong><small>AI 风格模仿 · 非 Gordon Ramsay 本人评价</small></span></div><blockquote>{caption}</blockquote><CopyCaption caption={caption} /></div></div>;
+  return <div className="pet-post"><div className="food-photo-frame">{original ? <Image unoptimized src={original} width={1000} height={1000} alt={`Real food photo: ${dish}`} /> : <div className="photo-unavailable">Photo unavailable</div>}</div><div className="pet-message"><div className="pet-message-header"><span aria-hidden="true" className="pet-avatar">👨‍🍳</span><span><strong>Gordon Ramsay-style critique</strong><small>AI style imitation. Not his actual review.</small></span></div><blockquote>{caption}</blockquote><CopyCaption caption={caption} /></div></div>;
 }

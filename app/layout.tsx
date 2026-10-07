@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Foodfolio | “Gordon Ramsay”式评价你的美食",
+  title: "Foodfolio | Gordon Ramsay-style food critiques",
   description: "Upload real food photos for original Gordon Ramsay-style AI critiques. Vote on funny commentary and discover food around NYC. AI imitation, not his actual review.",
 };
 

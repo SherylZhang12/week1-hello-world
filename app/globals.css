@@ -255,3 +255,5 @@ h1, h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
 
 .chef-identity { display:grid; grid-template-columns:35px 1fr; gap:5px 8px; align-items:center; margin:22px 0; padding:15px; border:1px solid var(--line); border-radius:12px; background:#fff0e2; }
 .chef-identity > span { grid-row:span 2; font-size:28px; }.chef-identity strong { font-size:13px; }.chef-identity small,.chef-disclosure { font-size:11px; color:var(--muted); }.chef-disclosure { margin:12px 0 20px; line-height:1.6; }
+
+.guest-upload { display:grid; gap:10px; margin:12px 0 24px; text-align:left; }.guest-upload strong { font-size:14px; }.guest-upload p { margin:0; }.guest-upload .button { font-size:12px; justify-content:center; }
