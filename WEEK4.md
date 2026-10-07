@@ -6,7 +6,7 @@ Real food photo → Gordon Ramsay-style commentary → Roast, Hype, or Roast the
 
 The named style is Gordon Ramsay: punchy sentences, dramatic rhetorical questions, culinary metaphors, fiery roasts and hard-earned praise. The homepage and community page explicitly display Gordon Ramsay-style food critiques. Both pages and each critique label the output as AI style imitation, not his real review or endorsement. Copied critiques carry the same attribution. The prompt forbids claiming to be him or copying show dialogue, and critiques only visible presentation plus supplied context; it must not infer taste, doneness or safety from a photo. A new reaction mode appears daily at New York midnight. Newest/weekly rankings and user-supplied restaurant/area bookmarks support discovery. Validate these engagement hypotheses with the PM.
 
-AI generates text only. Photos are the users’ real uploads. There is no active image-generation call in the creation flow. `gemini-2.5-flash-lite` has free-tier image input/text output, subject to account availability and quotas. Do not enable billing for this version. Official pricing: https://ai.google.dev/gemini-api/docs/pricing#gemini-2.5-flash-lite
+AI generates text only. Photos are the users’ real uploads. There is no active image-generation call in the creation flow. `gemini-3.1-flash-lite` has free-tier image input/text output, subject to account availability and quotas. Do not enable billing for this version. Official pricing: https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite
 
 ## Apply
 
@@ -14,13 +14,13 @@ AI generates text only. Photos are the users’ real uploads. There is no active
 bash /Users/mac/.codex/.chatgpt-projects/g-p-6abd8d4db1388191bcff0fb3f7631307/week4-rating/scripts/apply-week4.sh
 ```
 
-The script checks your original checkout is clean and still at the Gordon Ramsay commit `1f4de7b`, copies the changes, runs lint/tests/build, then commits and pushes. If your checkout has changed, it stops for review. It never copies credentials.
+The script checks your original checkout is clean and still at the English-only commit `bf4b74e`, copies the changes, runs lint/tests/build, then commits and pushes. If your checkout has changed, it stops for review. It never copies credentials.
 
 ## Configure
 
 1. Rerun the updated `supabase/week4_rating.sql` in the SAME Supabase project. This adds reply style, language and media kind, increases the text length, allows the Gordon Ramsay persona and chef_text media kind, updates text-post publishing/voting policies and changes the daily limit to 10. The earlier SQL is insufficient for this version. Existing rows and uploaded photos are preserved; the new feed shows chef text posts.
 2. Create a Gemini API key in https://aistudio.google.com/api-keys using a project with free-tier text-model access. Keep billing disabled. Never send the key in chat or commit it.
-3. In the existing Vercel project, add server-only `GEMINI_API_KEY` for Production and Preview. Optional `GEMINI_MODEL` defaults to `gemini-2.5-flash-lite`. Keep the existing Supabase settings. `GEMINI_IMAGE_MODEL` is unused by this creation flow.
+3. In the existing Vercel project, add server-only `GEMINI_API_KEY` for Production and Preview. Optional `GEMINI_MODEL` defaults to `gemini-3.1-flash-lite`. Keep the existing Supabase settings. `GEMINI_IMAGE_MODEL` is unused by this creation flow.
 4. Redeploy after adding the key. Retain the existing Google login and allow the deployment’s `/auth/callback` in Supabase Auth.
 5. Verify the commit deployment works in Incognito and is available for grading. Submit the commit-specific deployment URL.
 
@@ -54,3 +54,7 @@ In Supabase Authentication → URL Configuration:
 After saving, start a NEW Google login on the online site. Do not reuse an old authorization URL or copy its one-time code between domains. URL Configuration changes apply without a new app deployment; English UI changes require the new commit deployment.
 
 Reference: https://supabase.com/docs/guides/auth/redirect-urls
+
+## Gemini error diagnosis
+
+Generation now defaults to `gemini-3.1-flash-lite` (image input, text output, free tier subject to quota). An existing GEMINI_MODEL overrides the default: set it to that model if it still points at an older model. Changes require a fresh Vercel deployment. Provider HTTP status and a safe diagnostic label appear on failures: KEY_REJECTED, API_DISABLED, MODEL_UNAVAILABLE, ACCESS_DENIED, QUOTA or INVALID_REQUEST. The raw provider message, API key and photo are never echoed. Vercel server logs include only the status, label and model. No billing is enabled by these changes.
