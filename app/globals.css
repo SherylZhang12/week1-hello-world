@@ -208,3 +208,38 @@ h1, h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
 .empty-feed { text-align:center; padding:45px 25px; }.empty-feed > span { color:var(--orange); font-size:35px; }.empty-feed h3 { font:25px Georgia,serif; margin-top:15px; }.empty-feed p { font-size:13px; color:var(--muted); }
 @media(max-width:900px) { .caption-hero { gap:30px; }.caption-layout { grid-template-columns:minmax(240px,300px) minmax(0,1fr); gap:20px; }.generator-panel { padding:22px; }.caption-content { grid-template-columns:75px minmax(0,1fr); gap:14px; }.caption-content blockquote { font-size:21px; } }
 @media(max-width:640px) { .caption-hero { grid-template-columns:1fr; padding:35px 0; gap:28px; }.caption-hero h1 { font-size:42px; }.daily-card { transform:none; padding:24px; }.daily-card h2 { font-size:25px; }.caption-layout { grid-template-columns:1fr; gap:30px; }.generator-panel { position:static; }.caption-card { padding:20px; }.caption-content { grid-template-columns:75px minmax(0,1fr); }.vote-row { flex-wrap:wrap; }.caption-form .form-row { grid-template-columns:1fr 1fr; } }
+/* Photo-first food community */
+.generator-panel { position:static; }
+.caption-form > .field { margin-top:18px; }
+.photo-preview { margin:15px 0; border-radius:10px; overflow:hidden; }
+.photo-preview img { width:100%; height:auto; max-height:200px; object-fit:cover; }
+.photo-pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0 16px; }
+.photo-pair figure { margin:0; min-width:0; }.food-photo-frame { background:#eee8d7; aspect-ratio:1; border-radius:12px; overflow:hidden; }
+.food-photo-frame img { width:100%; height:100%; object-fit:contain; }.photo-pair figcaption { margin-top:6px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+.photo-pair figure:last-child figcaption { color:var(--orange); }.photo-unavailable { height:100%; display:grid; place-items:center; font-size:12px; color:var(--muted); }
+.post-author { font-weight:600; font-size:13px; }.post-author small { display:block; color:var(--muted); font-weight:400; font-size:11px; }
+.post-dish { font:28px Georgia,serif; margin:18px 0 7px; }.post-place { color:var(--orange); font-size:12px; margin-bottom:10px; }
+.food-story { font-size:14px; line-height:1.75; overflow-wrap:anywhere; }.ai-note,.rating-explanation,.draft-note { font-size:11px; color:var(--muted); line-height:1.65; }
+.draft-note { padding:12px; background:#f6efde; border-radius:8px; }.rating-explanation { margin-bottom:8px; }
+.area-filter { display:flex; align-items:center; flex-wrap:wrap; gap:10px; font-size:11px; margin:0 0 22px; }.area-filter select { border:1px solid var(--line); border-radius:8px; padding:9px; background:#fffefb; max-width:100%; }
+@media(max-width:640px) { .photo-pair { gap:8px; }.post-dish { font-size:25px; }.area-filter label { width:100%; } }
+
+/* Tiny dining companions */
+.animal-picker { border:0; padding:0; margin:24px 0 18px; min-width:0; }
+.animal-picker legend { font-size:12px; font-weight:600; margin-bottom:10px; }
+.animal-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.animal-options label { position:relative; cursor:pointer; }
+.animal-options input { position:absolute; opacity:0; width:1px; height:1px; }
+.animal-options label > span { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 4px; border:1px solid var(--line); border-radius:12px; font-size:12px; background:#fffefb; }
+.animal-options label > span > span { font-size:27px; }
+.animal-options input:checked + span { border-color:var(--orange); background:#fff0e2; box-shadow:0 0 0 1px var(--orange); }
+.animal-options input:focus-visible + span { outline:3px solid var(--foreground); outline-offset:3px; }
+.animal-options input:disabled + span { opacity:.6; cursor:wait; }
+.companion-note { font:italic 14px/1.6 Georgia,serif; color:var(--orange); }
+.daily-pick { font-size:12px; margin-top:12px; }
+.post-photo { margin:18px 0 8px; }
+.photo-switch { display:flex; gap:8px; margin-bottom:10px; }
+.photo-switch button { border:1px solid var(--line); border-radius:20px; padding:8px 14px; font-size:11px; background:transparent; cursor:pointer; }
+.photo-switch button[aria-pressed=true] { color:#fff; background:var(--foreground); border-color:var(--foreground); }
+.download-image { display:inline-block; margin-top:12px; font-size:11px; }
+.companion-label { color:var(--orange); font-size:11px; margin:10px 0; }

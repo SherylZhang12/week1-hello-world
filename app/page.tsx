@@ -11,20 +11,20 @@ export default async function Home() {
 
   return <div className="site-shell">
     <header className="site-header"><Brand /><nav aria-label="Main navigation">
-      <Link href="/captions" className="nav-link">AI captions ✦</Link>
+      <Link href="/captions" className="nav-link">Food community ✦</Link>
       {user ? <><Link href="/profile" className="nav-link">My profile</Link><form action={signOut}><button className="button button-small button-outline">Sign out</button></form></> : <Link href="/login" className="button button-small">Sign in <Arrow /></Link>}
     </nav></header>
     <main id="main-content">
       <section className="hero">
-        <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> A LITTLE COLLECTION OF GOOD TASTE</p>
-          <h1>Life tastes better<br />with <em>favorite foods.</em></h1>
-          <p className="hero-description">A place for the dishes I love, the flavors I come back to, and a little inspiration for your next bite.</p>
-          <Link href="/captions" className="button">Create & rate AI captions <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
+        <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> GOOD FOOD. TINY COMPANY.</p>
+          <h1>Good food deserves<br /><em>a tiny plus-one.</em></h1>
+          <p className="hero-description">Share a real meal. Add a spoon-sized kitten, puppy, or bunny with AI. Discover adorable creations and save your next food adventure.</p>
+          <Link href="/captions" className="button">Meet the tiny diners <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
           <div className="hero-note"><span aria-hidden="true">✳</span> From around the world, with love.</div>
         </div>
         <div className="hero-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" />
-          <span className="handwritten">a few of my favorite things</span><FoodArt name="sushi" className="hero-food" />
-          <div className="floating-label"><span aria-hidden="true">✦</span> Good food, good mood.</div><span className="hero-spark" aria-hidden="true">✳</span>
+          <span className="handwritten">a little company for your next bite</span><FoodArt name="sushi" className="hero-food" />
+          <div className="floating-label"><span aria-hidden="true">✦</span> Tiny paws. Big appetite.</div><span className="hero-spark" aria-hidden="true">✳</span>
         </div>
       </section>
       <section id="favorites" className="collection" aria-labelledby="collection-heading">
