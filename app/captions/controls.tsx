@@ -1,14 +1,13 @@
 "use client";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { createCaption, rateCaption, publishPhoto, savePhoto } from "./actions";
-import { ANIMALS, ANIMAL_ACTIONS, NEIGHBORHOODS } from "@/lib/food-photo";
+import { REPLY_STYLES, POST_LANGUAGES, NEIGHBORHOODS } from "@/lib/food-photo";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
 
-export function Generator({ challenge }: { challenge: { animal: string; action: string } }) {
-  const [selectedAnimal, setAnimal] = useState("Kitten");
-  const [animalAction, setAnimalAction] = useState("Eating with a spoon");
+export function Generator({ challenge }: { challenge: { persona: string; style: string } }) {
+  const [replyStyle, setReplyStyle] = useState("Roast");
   const [state, action, pending] = useActionState(createCaption, {});
   const [uploading, setUploading] = useState(false);
   const [photoPath, setPhotoPath] = useState("");
@@ -47,16 +46,18 @@ export function Generator({ challenge }: { challenge: { animal: string; action: 
     <input type="hidden" name="original_path" value={photoPath} />
     {uploadError && <p className="notice notice-error" role="alert">{uploadError}</p>}
     <label className="field">02 · What did you eat?<input name="dish" required maxLength={80} placeholder="Spicy miso ramen" disabled={busy} /></label>
-    <label className="field">Your food story (optional)<textarea name="scene" maxLength={500} rows={3} placeholder="A rainy afternoon, a tiny ramen shop, and the best bowl after class." disabled={busy} /></label>
+    <label className="field">Your food story (optional)<textarea name="scene" maxLength={500} rows={3} placeholder="Paid $24 for ramen after class. Said I was saving money this week." disabled={busy} /></label>
     <label className="field">Place name (optional)<input name="restaurant" maxLength={100} placeholder="Restaurant, café, or your own kitchen" disabled={busy} /></label>
     <label className="field">Neighborhood<select name="neighborhood" defaultValue="Other / home" disabled={busy}>{NEIGHBORHOODS.map(n => <option key={n}>{n}</option>)}</select></label>
-    <fieldset className="animal-picker" disabled={busy}><legend>03 · Pick your tiny companion</legend><div className="animal-options">{ANIMALS.map((animal, i) => <label key={animal}><input type="radio" name="tone" value={animal} checked={selectedAnimal === animal} onChange={() => setAnimal(animal)} /><span><span aria-hidden="true">{["🐱", "🐶", "🐰"][i]}</span>{animal}</span></label>)}</div></fieldset>
-    <label className="field">What are they doing?<select name="animal_action" value={animalAction} onChange={e => setAnimalAction(e.target.value)} disabled={busy}>{ANIMAL_ACTIONS.map(a => <option key={a}>{a}</option>)}</select></label>
-    <button type="button" className="text-link daily-pick" disabled={busy} onClick={() => { setAnimal(challenge.animal); setAnimalAction(challenge.action); }}>Try today’s pair: {challenge.animal} ↗</button>
-    <p className="companion-note">Spoon-sized. Soft little paws. Your real meal, with a little company.</p>
-    <p className="upload-help">Your photo and story go to Google Gemini to add your miniature animal. The draft stays private until you publish.</p>
-    <button className="button" disabled={busy || !photoPath}>{uploading ? "Preparing your photo…" : pending ? "Adding your tiny companion…" : "Meet your tiny companion ✦"}</button>
-    <p className="upload-help">Up to 3 image attempts a day. Generation may take about a minute.</p>
+    <input type="hidden" name="tone" value="Gordon Ramsay" />
+    <div className="chef-identity"><span aria-hidden="true">👨‍🍳</span><strong>“Gordon Ramsay”式评价你的美食</strong><small>AI 风格模仿 · 非本人点评</small></div>
+    <label className="field">03 · Choose the heat<select name="reply_style" value={replyStyle} onChange={e => setReplyStyle(e.target.value)} disabled={busy}>{REPLY_STYLES.map(a => <option key={a} value={a}>{({Roast:"Full roast · 火力全开",Hype:"Chef approved · 主厨放行", "Roast then hype":"Roast then praise · 先损后夸"})[a]}</option>)}</select></label>
+    <label className="field">Post language<select name="language" defaultValue="English" disabled={busy}>{POST_LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></label>
+    <button type="button" className="text-link daily-pick" disabled={busy} onClick={() => { setReplyStyle(challenge.style); }}>Try today’s mode: {challenge.style} ↗</button>
+    <p className="companion-note">Your dish enters the kitchen. The chef has opinions.</p>
+    <p className="upload-help">Your photo and story go to Google Gemini to write original Gordon Ramsay-style commentary. The draft stays private until you publish.</p>
+    <button className="button" disabled={busy || !photoPath}>{uploading ? "Preparing your photo…" : pending ? "The chef is judging…" : "Get my chef-style critique ✦"}</button>
+    <p className="upload-help">Up to 10 attempts a day, 30 seconds apart. Your photo stays real; the commentary is AI-written.</p>
     <div aria-live="polite">{state.error && <p role="alert" className="notice notice-error">{state.error}</p>}{state.success && <p className="notice notice-success">{state.success} <Link href="/captions?mine=1" className="text-link">View preview →</Link></p>}</div>
   </form>;
 }
@@ -74,7 +75,7 @@ export function PostControls({ id, published, saved, loggedIn }: { id: string; p
     try { await navigator.clipboard.writeText(`${window.location.origin}/captions?post=${id}`); setMessage("Post link copied."); }
     catch { setMessage("Open this post and copy its address to share."); }
   }
-  return <div className="post-controls">{!published ? <><p className="draft-note">Private preview · Publishing makes both photos, your first name, place and story public.</p><button type="button" className="button button-small" disabled={pending} onClick={() => mutate(true)}>Publish to the community ↗</button></> : <div className="caption-card-actions">{loggedIn ? <button type="button" className="text-link" aria-pressed={saved} disabled={pending} onClick={() => mutate(false)}>{saved ? "♥ Saved" : "♡ Save for later"}</button> : <Link href="/login" className="text-link">Sign in to save</Link>}<button type="button" className="text-link" onClick={share}>Share post ↗</button></div>}<p className="vote-status" role="status">{pending ? "Saving…" : message}</p></div>;
+  return <div className="post-controls">{!published ? <><p className="draft-note">Private preview · Publishing makes your photo, AI-written chef critique, first name, place and story public.</p><button type="button" className="button button-small" disabled={pending} onClick={() => mutate(true)}>Publish to the community ↗</button></> : <div className="caption-card-actions">{loggedIn ? <button type="button" className="text-link" aria-pressed={saved} disabled={pending} onClick={() => mutate(false)}>{saved ? "♥ Saved" : "♡ Save for later"}</button> : <Link href="/login" className="text-link">Sign in to save</Link>}<button type="button" className="text-link" onClick={share}>Share post ↗</button></div>}<p className="vote-status" role="status">{pending ? "Saving…" : message}</p></div>;
 }
 
 export function VoteControls({ id, vote, score, count, loggedIn }: { id: string; vote: number | null; score: number; count: number; loggedIn: boolean }) {
@@ -86,36 +87,17 @@ export function VoteControls({ id, vote, score, count, loggedIn }: { id: string;
       catch { setMessage("Could not save your vote. Refresh and try again."); }
     });
   }
-  return <div><div className="vote-row"><span className="caption-score"><strong>{score > 0 ? `+${score}` : score}</strong><small>{count} {count === 1 ? "vote" : "votes"}</small></span>{loggedIn ? <div className="vote-buttons"><button type="button" aria-label="Upvote this AI image" aria-pressed={vote === 1} disabled={pending} onClick={() => submit(1)}>↑ Love it</button><button type="button" aria-label="Downvote this AI image" aria-pressed={vote === -1} disabled={pending} onClick={() => submit(-1)}>↓ Pass</button></div> : <Link href="/login" className="text-link">Sign in to vote ↗</Link>}</div><p className="vote-status" role="status">{pending ? "Saving…" : message}</p></div>;
+  return <div><div className="vote-row"><span className="caption-score"><strong>{score > 0 ? `+${score}` : score}</strong><small>{count} {count === 1 ? "vote" : "votes"}</small></span>{loggedIn ? <div className="vote-buttons"><button type="button" aria-label="Upvote this AI chef critique" aria-pressed={vote === 1} disabled={pending} onClick={() => submit(1)}>↑ Love it</button><button type="button" aria-label="Downvote this AI chef critique" aria-pressed={vote === -1} disabled={pending} onClick={() => submit(-1)}>↓ Pass</button></div> : <Link href="/login" className="text-link">Sign in to vote ↗</Link>}</div><p className="vote-status" role="status">{pending ? "Saving…" : message}</p></div>;
 }
 
 export function CopyCaption({ caption }: { caption: string }) {
-  const [message, setMessage] = useState("Copy caption");
+  const [message, setMessage] = useState("Copy critique");
   async function copy() {
-    try { await navigator.clipboard.writeText(caption); setMessage("Copied!"); } catch { setMessage("Select the caption to copy"); }
+    try { await navigator.clipboard.writeText(`${caption}\n\nAI-generated Gordon Ramsay-style commentary; not his actual review or endorsement.`); setMessage("Copied!"); } catch { setMessage("Select the caption to copy"); }
   }
   return <button className="text-link copy-caption" type="button" onClick={copy}>{message}</button>;
 }
 
-export function PhotoViewer({ original, generated, dish }: { original?: string; generated?: string; dish: string }) {
-  const [showOriginal, setShowOriginal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const src = showOriginal ? original : generated;
-  async function download() {
-    if (!generated) return;
-    setSaving(true);
-    try {
-      const response = await fetch(generated);
-      if (!response.ok) throw new Error("Download failed");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const extension = blob.type === "image/jpeg" ? "jpg" : blob.type === "image/webp" ? "webp" : "png";
-      const link = document.createElement("a"); link.href = url; link.download = `foodfolio-tiny-companion.${extension}`; link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage("Image downloaded. Share it as an AI creation.");
-    } catch { setMessage("Could not download. Refresh the post and try again."); }
-    finally { setSaving(false); }
-  }
-  return <div className="post-photo"><div className="photo-switch" role="group" aria-label="Compare original and AI creation"><button type="button" aria-pressed={!showOriginal} onClick={() => setShowOriginal(false)}>✦ AI companion</button><button type="button" aria-pressed={showOriginal} onClick={() => setShowOriginal(true)}>Original meal</button></div><div className="food-photo-frame">{src ? <Image unoptimized src={src} width={1000} height={1000} alt={`${showOriginal ? "Original meal" : "AI miniature animal creation"}: ${dish}`} /> : <div className="photo-unavailable">Photo unavailable</div>}</div>{generated && <button type="button" className="text-link download-image" disabled={saving} onClick={download}>{saving ? "Downloading…" : "Download AI image ↗"}</button>}<p className="vote-status" role="status">{message}</p></div>;
+export function ChefPost({ original, dish, caption }: { original?: string; dish: string; caption: string }) {
+  return <div className="pet-post"><div className="food-photo-frame">{original ? <Image unoptimized src={original} width={1000} height={1000} alt={`Real food photo: ${dish}`} /> : <div className="photo-unavailable">Photo unavailable</div>}</div><div className="pet-message"><div className="pet-message-header"><span aria-hidden="true" className="pet-avatar">👨‍🍳</span><span><strong>Gordon Ramsay-style critique</strong><small>AI 风格模仿 · 非 Gordon Ramsay 本人评价</small></span></div><blockquote>{caption}</blockquote><CopyCaption caption={caption} /></div></div>;
 }

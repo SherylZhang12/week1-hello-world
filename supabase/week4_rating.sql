@@ -20,6 +20,13 @@ alter table public.caption_generations drop constraint if exists caption_generat
 alter table public.caption_generations add constraint caption_generations_scene_check check(char_length(scene) <= 500);
 alter table public.caption_generations drop constraint if exists food_animal_action_check;
 alter table public.caption_generations add constraint food_animal_action_check check(animal_action in ('Eating with a spoon','Holding a tiny fork','Sneaking a bite'));
+alter table public.caption_generations add column if not exists reply_style text not null default 'Roast';
+alter table public.caption_generations add column if not exists language text not null default 'English';
+alter table public.caption_generations add column if not exists media_kind text not null default 'image';
+alter table public.caption_generations drop constraint if exists caption_generations_caption_check;
+alter table public.caption_generations add constraint caption_generations_caption_check check(char_length(caption) between 1 and 800);
+alter table public.caption_generations drop constraint if exists food_pet_post_check;
+alter table public.caption_generations add constraint food_pet_post_check check(reply_style in ('Roast','Hype','Roast then hype') and language in ('English','中文') and media_kind in ('image','animal_text','chef_text'));
 alter table public.caption_generations add column if not exists original_path text;
 alter table public.caption_generations add column if not exists image_path text;
 alter table public.caption_generations add column if not exists restaurant text not null default '';
@@ -29,7 +36,7 @@ alter table public.caption_generations add column if not exists published_at tim
 alter table public.caption_generations drop constraint if exists caption_generations_dish_check;
 alter table public.caption_generations add constraint caption_generations_dish_check check(char_length(dish) between 1 and 80);
 alter table public.caption_generations drop constraint if exists caption_generations_tone_check;
-alter table public.caption_generations add constraint caption_generations_tone_check check(tone in ('Kitten','Puppy','Bunny','Editorial','Cozy café','Food poster','Deadpan','Chronically online','Wholesome'));
+alter table public.caption_generations add constraint caption_generations_tone_check check(tone in ('Gordon Ramsay','Cat','Dog','Kitten','Puppy','Bunny','Editorial','Cozy café','Food poster','Deadpan','Chronically online','Wholesome'));
 alter table public.caption_generations drop constraint if exists food_photo_metadata_check;
 alter table public.caption_generations add constraint food_photo_metadata_check check(
   char_length(restaurant) <= 100 and char_length(neighborhood) <= 80 and char_length(display_name) <= 80
@@ -44,7 +51,7 @@ create table if not exists public.food_saves (
 );
 create or replace function public.is_published_food_post(post_id uuid)
 returns boolean language sql stable security definer set search_path = ''
-as $$ select exists(select 1 from public.caption_generations where id = post_id and published_at is not null and image_path is not null); $$;
+as $$ select exists(select 1 from public.caption_generations where id = post_id and published_at is not null and (image_path is not null or (media_kind = 'chef_text' and original_path is not null))); $$;
 revoke all on function public.is_published_food_post(uuid) from public;
 grant execute on function public.is_published_food_post(uuid) to anon, authenticated;
 
@@ -90,7 +97,7 @@ end $$;
 
 revoke all on public.caption_generations, public.caption_votes, public.caption_generation_limits, public.food_saves from anon, authenticated;
 grant select on public.caption_generations, public.caption_votes to authenticated;
-grant insert (user_id, scene, dish, tone, animal_action, caption, prompt, system_prompt, model, original_path, image_path, restaurant, neighborhood, display_name) on public.caption_generations to authenticated;
+grant insert (user_id, scene, dish, tone, animal_action, reply_style, language, media_kind, caption, prompt, system_prompt, model, original_path, image_path, restaurant, neighborhood, display_name) on public.caption_generations to authenticated;
 grant insert (user_id, generation_id, value) on public.caption_votes to authenticated;
 grant update (value) on public.caption_votes to authenticated;
 grant update (published_at) on public.caption_generations to authenticated;
@@ -99,9 +106,9 @@ grant select, insert, delete on public.food_saves to authenticated;
 create policy caption_read_own on public.caption_generations for select to authenticated
   using ((select auth.uid()) = user_id);
 create policy caption_insert_own on public.caption_generations for insert to authenticated
-  with check ((select auth.uid()) = user_id and original_path is not null and image_path is not null);
+  with check ((select auth.uid()) = user_id and original_path is not null and (image_path is not null or (media_kind = 'chef_text' and original_path is not null)));
 create policy photo_publish_own on public.caption_generations for update to authenticated
-  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id and original_path is not null and image_path is not null);
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id and original_path is not null and (image_path is not null or (media_kind = 'chef_text' and original_path is not null)));
 create policy saves_read_own on public.food_saves for select to authenticated using ((select auth.uid()) = user_id);
 create policy saves_insert_own on public.food_saves for insert to authenticated
   with check ((select auth.uid()) = user_id and public.is_published_food_post(generation_id));
@@ -132,13 +139,13 @@ drop function if exists public.get_caption_feed(text, boolean);
 drop function if exists public.get_caption_feed(text, boolean, boolean, text, uuid);
 create function public.get_caption_feed(p_sort text default 'new', p_mine boolean default false, p_saved boolean default false, p_area text default '', p_post uuid default null)
 returns table (
-  id uuid, caption text, scene text, dish text, tone text, animal_action text, model text,
+  id uuid, caption text, scene text, dish text, tone text, animal_action text, reply_style text, language text, media_kind text, model text,
   created_at timestamptz, score bigint, vote_count bigint, my_vote smallint, is_owner boolean,
   original_path text, image_path text, restaurant text, neighborhood text, display_name text, published_at timestamptz, is_saved boolean
 )
 language sql stable security definer set search_path = ''
 as $$
-  select g.id, g.caption, g.scene, g.dish, g.tone, g.animal_action, g.model, g.created_at,
+  select g.id, g.caption, g.scene, g.dish, g.tone, g.animal_action, g.reply_style, g.language, g.media_kind, g.model, g.created_at,
     coalesce(v.score, 0)::bigint, coalesce(v.vote_count, 0)::bigint,
     mine.value, coalesce(g.user_id = auth.uid(), false),
     g.original_path, g.image_path, g.restaurant, g.neighborhood, g.display_name, g.published_at,
@@ -150,7 +157,7 @@ as $$
   ) v on true
   left join public.caption_votes mine on mine.generation_id = g.id and mine.user_id = auth.uid()
   where (g.published_at is not null or (p_mine and g.user_id = auth.uid()))
-    and g.image_path is not null
+    and g.media_kind = 'chef_text' and g.original_path is not null
     and (not p_mine or g.user_id = auth.uid())
     and (not p_saved or exists(select 1 from public.food_saves saved where saved.generation_id = g.id and saved.user_id = auth.uid()))
     and (p_area = '' or g.neighborhood = p_area)
@@ -203,7 +210,7 @@ begin
     values(caller, today) on conflict(user_id) do nothing;
   select * into limits from public.caption_generation_limits where user_id = caller for update;
   if limits.last_attempt > now() - interval '30 seconds' then return 'cooldown'; end if;
-  if limits.day = today and limits.attempts >= 3 then return 'daily_limit'; end if;
+  if limits.day = today and limits.attempts >= 10 then return 'daily_limit'; end if;
   update public.caption_generation_limits set day = today,
     attempts = case when limits.day = today then limits.attempts + 1 else 1 end,
     last_attempt = now() where user_id = caller;

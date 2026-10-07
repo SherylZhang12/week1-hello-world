@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Foodfolio | Good Food. Tiny Company.",
-  description: "Add spoon-sized kittens, puppies and bunnies to your real food photos. Share AI creations, vote on favorites and discover meals around NYC.",
+  title: "Foodfolio | “Gordon Ramsay”式评价你的美食",
+  description: "Upload real food photos for original Gordon Ramsay-style AI critiques. Vote on funny commentary and discover food around NYC. AI imitation, not his actual review.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -15,7 +15,7 @@ export function dailyChallenge(date = new Date()) {
   return CHALLENGES[day % CHALLENGES.length];
 }
 export type Caption = {
-  id: string; caption: string; scene: string; dish: string; tone: string; animal_action: string;
+  id: string; caption: string; scene: string; dish: string; tone: string; animal_action: string; reply_style: string; language: string; media_kind: string;
   model: string; created_at: string; score: number; vote_count: number;
   my_vote: number | null; is_owner: boolean; original_path: string | null; image_path: string | null; restaurant: string; neighborhood: string; display_name: string; published_at: string | null; is_saved: boolean;
 };

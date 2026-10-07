@@ -243,3 +243,15 @@ h1, h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
 .photo-switch button[aria-pressed=true] { color:#fff; background:var(--foreground); border-color:var(--foreground); }
 .download-image { display:inline-block; margin-top:12px; font-size:11px; }
 .companion-label { color:var(--orange); font-size:11px; margin:10px 0; }
+
+/* Animals posting from a human phone */
+.animal-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pet-post { margin:18px 0; }
+.pet-message { background:#f4efdf; border:1px solid var(--line); border-radius:14px; padding:22px; margin-top:12px; }
+.pet-message-header { display:flex; align-items:center; gap:10px; font-size:12px; }
+.pet-avatar { display:grid; place-items:center; border-radius:50%; background:#fffaf4; width:42px; height:42px; font-size:26px; }
+.pet-message-header small { display:block; color:var(--muted); font-size:10px; margin-top:4px; }
+.pet-message blockquote { white-space:pre-wrap; overflow-wrap:anywhere; font:21px/1.6 Georgia,serif; margin:18px 0; }
+
+.chef-identity { display:grid; grid-template-columns:35px 1fr; gap:5px 8px; align-items:center; margin:22px 0; padding:15px; border:1px solid var(--line); border-radius:12px; background:#fff0e2; }
+.chef-identity > span { grid-row:span 2; font-size:28px; }.chef-identity strong { font-size:13px; }.chef-identity small,.chef-disclosure { font-size:11px; color:var(--muted); }.chef-disclosure { margin:12px 0 20px; line-height:1.6; }

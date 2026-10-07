@@ -16,15 +16,15 @@ export default async function Home() {
     </nav></header>
     <main id="main-content">
       <section className="hero">
-        <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> GOOD FOOD. TINY COMPANY.</p>
-          <h1>Good food deserves<br /><em>a tiny plus-one.</em></h1>
-          <p className="hero-description">Share a real meal. Add a spoon-sized kitten, puppy, or bunny with AI. Discover adorable creations and save your next food adventure.</p>
-          <Link href="/captions" className="button">Meet the tiny diners <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
+        <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> YOUR FOOD. THE CHEF’S VERDICT.</p>
+          <h1>“Gordon Ramsay”<br /><em>式评价你的美食</em></h1>
+          <p className="hero-description">Upload your real meal. Get original Gordon Ramsay-style AI commentary: fiery roasts, hard-earned compliments, and a verdict worth sharing.</p>
+          <p className="chef-disclosure">AI 风格模仿 · 非 Gordon Ramsay 本人评价或背书</p><Link href="/captions" className="button">Enter the kitchen <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
           <div className="hero-note"><span aria-hidden="true">✳</span> From around the world, with love.</div>
         </div>
         <div className="hero-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" />
-          <span className="handwritten">a little company for your next bite</span><FoodArt name="sushi" className="hero-food" />
-          <div className="floating-label"><span aria-hidden="true">✦</span> Tiny paws. Big appetite.</div><span className="hero-spark" aria-hidden="true">✳</span>
+          <span className="handwritten">ready for the chef’s verdict?</span><FoodArt name="sushi" className="hero-food" />
+          <div className="floating-label"><span aria-hidden="true">✦</span> Good food. Fiery feedback.</div><span className="hero-spark" aria-hidden="true">✳</span>
         </div>
       </section>
       <section id="favorites" className="collection" aria-labelledby="collection-heading">
