@@ -85,9 +85,10 @@ test('invalid personal ratings and oversized reviews fail before AI',async()=>{
 test('dog and cat provider requests preserve selected persona and pet-specific instructions',async()=>{
   for(const persona of ['Cat','Dog']){let request;const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:'{"caption":"My human has found another plate to photograph. Where is my invitation?"}' }]}}]}));}});await ai.generateChefReview(new Uint8Array([255,216,255]),'image/jpeg','','Pizza',persona,'Roast','English');assert.equal(JSON.parse(request.contents[0].parts[0].text).persona,persona);assert.match(request.systemInstruction.parts[0].text,/found their phone/);assert.match(request.systemInstruction.parts[0].text,/never suggest feeding them/);}
 });
+const groupHelpers=load('lib/group-dining.ts',{'./restaurant-search':restaurants});
 function finderHarness({user={id:'user-a'},credit='ok',fetcher=async()=>new Response(JSON.stringify({elements:[restaurantElement(1,'Mapped Pizza','pizza')]}))}={}) {
   const calls=[];
-  const actions=load('app/eat/actions.ts',{'@/lib/restaurant-search':restaurants,'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user}})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},fetch:async(...args)=>{calls.push('fetch');return fetcher(...args);}});
+  const actions=load('app/eat/actions.ts',{'@/lib/restaurant-search':restaurants,'@/lib/group-dining':groupHelpers,'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user}})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},fetch:async(...args)=>{calls.push('fetch');return fetcher(...args);}});
   const f=new FormData();f.set('area','Lower East Side');f.set('radius','2500');f.set('wants','pizza');return {actions,calls,f};
 }
 test('restaurant search authenticates and validates before provider access',async()=>{
@@ -116,7 +117,7 @@ test('a negative phrase in the craving field becomes an exclusion',()=>{
 const mealHelpers=load('lib/meal-coach.ts');
 function coachForm() {const f=new FormData();f.set('age','24');f.set('height','165');f.set('weight','60');f.set('sex','Female');f.set('activity','Regular workouts');f.set('goal','Muscle support');f.set('consent','yes');f.set('photo_Breakfast',new Blob([new Uint8Array([255,216,255,0])],{type:'image/jpeg'}),'breakfast.jpg');f.set('notes_Breakfast','Two eggs and toast, eaten in full');return f;}
 function planFixture(uploaded=['Breakfast']) {
-  return {summary:'Based on your supplied breakfast, consider varied meals with a protein source.',observations:uploaded.map(meal=>({meal,observation:'This appears to include eggs and toast.',uncertainty:'Amounts and ingredients are not confirmed by a photo.'})),suggestions:mealHelpers.planTargets(uploaded).meals.map(meal=>({meal,idea:'Tofu, brown rice and vegetables.',why:'Combines protein, carbohydrates and vegetables.',swap:'Beans with whole-grain bread and salad.'})),improvements:['Include a varied protein source with each meal.'],questions:['How much did you eat?']};
+  return {summary:'Based on your supplied breakfast, consider varied meals with a protein source.',observations:uploaded.map(meal=>({meal,observation:'This appears to include eggs and toast.',uncertainty:'Amounts and ingredients are not confirmed by a photo.'})),suggestions:mealHelpers.planTargets(uploaded).meals.map(meal=>({meal,idea:'Tofu, brown rice and vegetables.',cuisine:'Japanese',dish:'Tofu rice bowl',why:'Combines protein, carbohydrates and vegetables.',swap:'Beans with whole-grain bread and salad.'})),improvements:['Include a varied protein source with each meal.'],questions:['How much did you eat?']};
 }
 test('meal timing plans only remaining meals, then tomorrow after dinner',()=>{
   assert.equal(JSON.stringify(mealHelpers.planTargets(['Breakfast']).meals),JSON.stringify(['Lunch','Dinner']));
@@ -125,11 +126,11 @@ test('meal timing plans only remaining meals, then tomorrow after dinner',()=>{
   assert.equal(mealHelpers.planTargets(['Dinner']).day,'tomorrow');
 });
 test('body inputs reject invalid units, minors and unsupported goals',()=>{
-  for(const [key,value] of [['age','17'],['age','NaN'],['height','999'],['weight','Infinity'],['goal','Diagnose inflammation']]){const f=coachForm();f.set(key,value);assert.ok(mealHelpers.readMealProfile(f).error);}
+  for(const [key,value] of [['age','17'],['age','NaN'],['height','999'],['weight','Infinity'],['goal','Diagnose inflammation'],['cuisine','Invented cuisine']]){const f=coachForm();f.set(key,value);assert.ok(mealHelpers.readMealProfile(f).error);}
   const f=coachForm();f.set('height','');f.set('weight','');f.set('sex','Prefer not to say');const result=mealHelpers.readMealProfile(f);assert.equal(result.profile.height_cm,null);assert.equal(result.profile.weight_kg,null);
 });
 test('meal output rejects skipped, duplicate and invented target meals and oversized strings',()=>{
-  for(const change of [p=>p.suggestions.pop(),p=>p.suggestions[0].meal='Breakfast',p=>p.observations[0].meal='Dinner',p=>p.summary='x'.repeat(1001),p=>p.questions=[]]){const plan=planFixture();change(plan);assert.throws(()=>mealHelpers.parseMealPlan(JSON.stringify(plan),['Breakfast']),/incomplete/);}
+  for(const change of [p=>p.suggestions.pop(),p=>p.suggestions[0].meal='Breakfast',p=>p.observations[0].meal='Dinner',p=>p.summary='x'.repeat(1001),p=>p.questions=[],p=>p.suggestions[0].cuisine='Unknown',p=>p.suggestions[0].dish='x'.repeat(101),p=>delete p.suggestions[0].dish]){const plan=planFixture();change(plan);assert.throws(()=>mealHelpers.parseMealPlan(JSON.stringify(plan),['Breakfast']),/incomplete/);}
   const valid=planFixture();valid.unexpected='discard';const parsed=mealHelpers.parseMealPlan(JSON.stringify(valid),['Breakfast']);assert.equal(parsed.unexpected,undefined);assert.equal(parsed.suggestions.length,2);
 });
 function coachHarness({user={id:'user-a'},credit='ok',failure=false}={}) {
@@ -157,7 +158,7 @@ test('meal coaching requires authentication, consent and a real supported photo 
   for(const adjust of [f=>f.delete('consent'),f=>f.delete('photo_Breakfast'),f=>f.set('photo_Breakfast',new Blob(['not an image']),'bad.jpg'),f=>f.set('photo_Breakfast',new Blob(['x'.repeat(300*1024+1)]),'huge.jpg')]){const h=coachHarness();const f=coachForm();adjust(f);assert.ok((await h.actions.coachMeals({},f)).error);assert.equal(h.calls.length,0);}
 });
 test('meal coaching forwards request-only body context, dietary restrictions and labeled photos',async()=>{
-  const h=coachHarness();const f=coachForm();f.set('restrictions','Vegetarian; peanut allergy');const result=await h.actions.coachMeals({},f);assert.ok(result.plan);assert.equal(result.day,'today');const call=h.calls.find(c=>Array.isArray(c));assert.equal(call[1].weight_kg,60);assert.equal(call[1].restrictions,'Vegetarian; peanut allergy');assert.equal(call[2][0].meal,'Breakfast');assert.equal(call[2][0].notes,'Two eggs and toast, eaten in full');assert.equal(call[2][0].mimeType,'image/jpeg');
+  const h=coachHarness();const f=coachForm();f.set('restrictions','Vegetarian; peanut allergy');f.set('cuisine','Japanese');const result=await h.actions.coachMeals({},f);assert.ok(result.plan);assert.equal(result.day,'today');const call=h.calls.find(c=>Array.isArray(c));assert.equal(call[1].weight_kg,60);assert.equal(call[1].cuisine,'Japanese');assert.equal(call[1].restrictions,'Vegetarian; peanut allergy');assert.equal(call[2][0].meal,'Breakfast');assert.equal(call[2][0].notes,'Two eggs and toast, eaten in full');assert.equal(call[2][0].mimeType,'image/jpeg');
 });
 test('meal quota and failed provider requests return no plan',async()=>{
   const limited=coachHarness({credit:'cooldown'});assert.ok((await limited.actions.coachMeals({},coachForm())).error);assert.ok(!limited.calls.some(c=>Array.isArray(c)));
@@ -168,5 +169,75 @@ test('meal Gemini prompt labels photos and asks for uncertainty and correct next
   const provider=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(planFixture())}]}}]}));}});
   const coach=load('lib/ai/meal-coach.ts',{'server-only':{},'./gemini':provider,'@/lib/meal-coach':mealHelpers});
   const result=await coach.generateMealPlan(mealHelpers.readMealProfile(coachForm()).profile,[{meal:'Breakfast',bytes:new Uint8Array([255,216,255]),mimeType:'image/jpeg',notes:'Two eggs'}]);
-  assert.equal(result.plan.suggestions.length,2);const context=JSON.parse(request.contents[0].parts[0].text);assert.equal(JSON.stringify(context.target_meals),JSON.stringify(['Lunch','Dinner']));assert.equal(context.plan_day,'today');assert.equal(request.contents[0].parts[2].inlineData.data,Buffer.from([255,216,255]).toString('base64'));assert.match(request.systemInstruction.parts[0].text,/never a diagnosis/);assert.match(request.systemInstruction.parts[0].text,/never invent an unuploaded earlier meal/);assert.match(request.systemInstruction.parts[0].text,/do not promise to treat inflammation/);assert.match(request.systemInstruction.parts[0].text,/No need to 'make up for'/);
+  assert.equal(result.plan.suggestions.length,2);const context=JSON.parse(request.contents[0].parts[0].text);assert.equal(JSON.stringify(context.target_meals),JSON.stringify(['Lunch','Dinner']));assert.equal(context.plan_day,'today');assert.equal(context.profile.cuisine,'Any cuisine');assert.ok(request.generationConfig.responseJsonSchema.properties.suggestions.items.required.includes('dish'));assert.match(request.systemInstruction.parts[0].text,/Do not name or invent restaurants/);assert.equal(request.contents[0].parts[2].inlineData.data,Buffer.from([255,216,255]).toString('base64'));assert.match(request.systemInstruction.parts[0].text,/never a diagnosis/);assert.match(request.systemInstruction.parts[0].text,/never invent an unuploaded earlier meal/);assert.match(request.systemInstruction.parts[0].text,/do not promise to treat inflammation/);assert.match(request.systemInstruction.parts[0].text,/No need to 'make up for'/);
+});
+
+
+test('all meal cuisine choices map to supported restaurant filters',()=>{
+  for(const cuisine of mealHelpers.MEAL_CUISINES.filter(c => c !== 'Any cuisine')){
+    const tags=restaurants.parsePreferences(cuisine,'').desired;
+    assert.equal(tags.length,1,`Cuisine not searchable: ${cuisine}`);
+    const matches=restaurants.rankRestaurants([restaurantElement(1,'Matching restaurant',tags[0]),restaurantElement(2,'Other restaurant','pizza')],40.715,-73.985,cuisine,'',2500);
+    assert.equal(matches.length,1);assert.equal(matches[0].name,'Matching restaurant');
+  }
+});
+test('validated meal output preserves cuisine and dish for restaurant handoff',()=>{
+  const plan=planFixture();plan.suggestions[0].extra='discard';
+  const parsed=mealHelpers.parseMealPlan(JSON.stringify(plan),['Breakfast']);
+  assert.equal(parsed.suggestions[0].cuisine,'Japanese');
+  assert.equal(parsed.suggestions[0].dish,'Tofu rice bowl');
+  assert.equal(parsed.suggestions[0].extra,undefined);
+  const profile=coachForm();profile.set('cuisine','Korean');
+  assert.equal(mealHelpers.readMealProfile(profile).profile.cuisine,'Korean');
+});
+
+function groupFixture(){return [{id:'you',name:'You',wants:'Japanese or Thai',avoids:'pizza',restrictions:'Vegetarian',notes:'Mild, $20 per person'},{id:'friend',name:'Friend',wants:'Thai',avoids:'Japanese',restrictions:'Peanut allergy',notes:'No shared appetizers'}];}
+function orderFixture(diners=groupFixture()){return {summary:'Ask staff before ordering; menu availability is unverified.',diners:diners.map(d=>({dinerId:d.id,ideas:['If available, ask about a suitable rice and vegetable dish.'],adjustments:'Ask staff about ingredients and individual restrictions.',reason:'Consider this diner’s preferences separately.'})),sharing:['Choose separate plates if restrictions conflict.'],checks:['Confirm ingredients and cross-contact with staff.']};}
+test('group ranking considers every diner and respects any cuisine veto',()=>{
+  const result=groupHelpers.rankForGroup([restaurantElement(1,'Japanese','japanese'),restaurantElement(2,'Thai','thai'),restaurantElement(3,'Pizza','pizza'),restaurantElement(4,'Unknown',null)],40.715,-73.985,groupFixture(),2500);
+  assert.equal(result.length,1);assert.equal(result[0].name,'Thai');assert.equal(result[0].groupScore,2);
+  assert.equal(JSON.stringify(result[0].matchedDiners),JSON.stringify(['You','Friend']));
+});
+test('group wishes have equal per-person weight and rank before distance',()=>{
+  const people=groupFixture();people[1].avoids='';people[0].avoids='';
+  const elements=Array.from({length:9},(_,i)=>restaurantElement(i+1,'Nearby Japanese '+i,'japanese'));
+  const thai=restaurantElement(50,'Consensus Thai','thai');thai.lat=40.72;elements.push(thai);
+  const result=groupHelpers.rankForGroup(elements,40.715,-73.985,people,2500);
+  assert.equal(result[0].name,'Consensus Thai');assert.equal(result[0].groupScore,2);assert.equal(result[1].groupScore,1);assert.equal(result.length,8);assert.equal(result[1].unmatchedDiners[0],'Friend');
+});
+test('conflicting vetoes are never relaxed to fabricate a group match',()=>{
+  const people=groupFixture();people[0].wants='Japanese';people[1].wants='pizza';
+  assert.equal(groupHelpers.rankForGroup([restaurantElement(1,'Japanese','japanese'),restaurantElement(2,'Pizza','pizza')],40.715,-73.985,people,2500).length,0);
+});
+test('group inputs reject excessive diners, duplicate IDs and oversized opinions',()=>{
+  for(const raw of ['bad',JSON.stringify([]),JSON.stringify(Array.from({length:13},()=>groupFixture()[0])),JSON.stringify([groupFixture()[0],groupFixture()[0]]),JSON.stringify([{...groupFixture()[0],notes:'x'.repeat(201)}])])assert.throws(()=>groupHelpers.readDiners(raw));
+  assert.equal(groupHelpers.readDiners(JSON.stringify(groupFixture())).length,2);
+});
+test('group search uses all supplied opinions and validates before consuming credit',async()=>{
+  const bad=finderHarness();bad.f.set('diners','[]');assert.ok((await bad.actions.findRestaurants({},bad.f)).error);assert.equal(bad.calls.length,0);
+  const h=finderHarness({fetcher:async()=>new Response(JSON.stringify({elements:[restaurantElement(1,'Thai','thai'),restaurantElement(2,'Japanese','japanese')]}))});h.f.set('diners',JSON.stringify(groupFixture()));
+  const result=await h.actions.findRestaurants({},h.f);assert.equal(result.restaurants.length,1);assert.equal(result.restaurants[0].name,'Thai');assert.equal(result.diners[1].restrictions,'Peanut allergy');assert.match(result.note,/cannot be verified/);
+});
+test('ordering output requires exactly one entry for each diner and drops unknown fields',()=>{
+  for(const change of [p=>p.diners.pop(),p=>p.diners[1].dinerId='you',p=>p.diners.reverse(),p=>p.diners[0].ideas=[],p=>p.checks=[]]){const plan=orderFixture();change(plan);assert.throws(()=>groupHelpers.parseGroupOrder(JSON.stringify(plan),groupFixture()));}
+  const plan=orderFixture();plan.secret='discard';assert.equal(groupHelpers.parseGroupOrder(JSON.stringify(plan),groupFixture()).secret,undefined);
+});
+function orderHarness({user={id:'user-a'},credit='ok',failure=false}={}){
+  const calls=[];const actions=load('app/eat/order-actions.ts',{'@/lib/group-dining':groupHelpers,'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user},error:null})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},'@/lib/ai/group-order':{generateGroupOrder:async(diners,restaurant,menu)=>{calls.push(['ai',diners,restaurant,menu]);if(failure)throw new Error('provider failure');return orderFixture(diners);}}});
+  const f=new FormData();f.set('diners',JSON.stringify(groupFixture()));f.set('restaurant','Mapped Thai');f.set('cuisine','thai');f.set('consent','yes');return {actions,calls,f};
+}
+test('ordering requires authentication and group consent before AI',async()=>{
+  const guest=orderHarness({user:null});assert.ok((await guest.actions.suggestOrders({},guest.f)).error);assert.equal(guest.calls.length,0);
+  for(const change of [f=>f.delete('consent'),f=>f.set('diners','[]'),f=>f.set('menu','x'.repeat(4001))]){const h=orderHarness();change(h.f);assert.ok((await h.actions.suggestOrders({},h.f)).error);assert.equal(h.calls.length,0);}
+});
+test('ordering forwards every opinion and pasted menu; quota and failures return no plan',async()=>{
+  const h=orderHarness();h.f.set('menu','Vegetable rice bowl; ask about sauces.');const result=await h.actions.suggestOrders({},h.f);assert.equal(result.plan.diners.length,2);const call=h.calls.find(c=>Array.isArray(c));assert.equal(call[1][0].notes,'Mild, $20 per person');assert.equal(call[1][1].restrictions,'Peanut allergy');assert.match(call[3],/Vegetable rice/);
+  const limited=orderHarness({credit:'cooldown'});assert.ok((await limited.actions.suggestOrders({},limited.f)).error);assert.ok(!limited.calls.some(c=>Array.isArray(c)));
+  const failed=orderHarness({failure:true});assert.equal((await failed.actions.suggestOrders({},failed.f)).plan,undefined);
+});
+test('ordering provider sees anonymous opinions and explicit menu uncertainty',async()=>{
+  let request;const provider=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(orderFixture())}]}}]}));}});
+  const ai=load('lib/ai/group-order.ts',{'server-only':{},'./gemini':provider,'@/lib/group-dining':groupHelpers});
+  await ai.generateGroupOrder(groupFixture(),{name:'Mapped Thai',cuisine:'thai'},'');
+  const context=JSON.parse(request.contents[0].parts[0].text);assert.equal(context.diners.length,2);assert.equal(context.diners[0].name,undefined);assert.equal(context.diners[1].restrictions,'Peanut allergy');assert.equal(context.self_reported_menu,null);assert.match(request.systemInstruction.parts[0].text,/Never let majority preferences override/);assert.match(request.systemInstruction.parts[0].text,/IF AVAILABLE/);
 });

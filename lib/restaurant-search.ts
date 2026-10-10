@@ -17,7 +17,7 @@ const CUISINES: Record<string, string[]> = {
   american: ["american", "美式"], seafood: ["seafood", "海鲜"],
 };
 export type Restaurant = { id: string; name: string; cuisine: string; address: string; lat: number; lon: number; distance: number; reason: string; source: string; maps: string };
-export type SearchResult = { error?: string; restaurants?: Restaurant[]; note?: string; location?: string };
+export type SearchResult = { error?: string; restaurants?: Restaurant[]; note?: string; location?: string; diners?: import("./group-dining").Diner[] };
 export type OsmElement = { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> };
 export function coordinates(lat: number, lon: number) {
   return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
@@ -35,7 +35,7 @@ export function distanceMeters(lat: number, lon: number, otherLat: number, other
   const a = Math.sin((otherLat - lat) * rad / 2) ** 2 + Math.cos(lat * rad) * Math.cos(otherLat * rad) * Math.sin((otherLon - lon) * rad / 2) ** 2;
   return Math.round(6371000 * 2 * Math.asin(Math.sqrt(Math.min(1, a))));
 }
-export function rankRestaurants(elements: OsmElement[], lat: number, lon: number, wants: string, avoids: string, radius: number) {
+export function rankRestaurants(elements: OsmElement[], lat: number, lon: number, wants: string, avoids: string, radius: number, limit = 8) {
   const { desired, excluded } = parsePreferences(wants, avoids);
   const seen = new Set<string>();
   const restaurants: Restaurant[] = [];
@@ -60,5 +60,5 @@ export function rankRestaurants(elements: OsmElement[], lat: number, lon: number
       source: `https://www.openstreetmap.org/${element.type}/${element.id}`,
       maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${point.lat},${point.lon}`)}` });
   }
-  return restaurants.sort((a, b) => a.distance - b.distance).slice(0, 8);
+  return restaurants.sort((a, b) => a.distance - b.distance).slice(0, limit);
 }

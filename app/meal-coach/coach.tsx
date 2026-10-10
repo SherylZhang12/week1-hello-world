@@ -3,14 +3,17 @@ import { useActionState, useEffect, useRef, useState, type ChangeEvent } from "r
 import Image from "next/image";
 import Link from "next/link";
 import { coachMeals } from "./actions";
-import { MEALS, MEAL_GOALS, ACTIVITIES, planTargets, type MealSlot, type CoachResult } from "@/lib/meal-coach";
+import { MEALS, MEAL_CUISINES, MEAL_GOALS, ACTIVITIES, planTargets, type MealSlot, type CoachResult, type MealSuggestion } from "@/lib/meal-coach";
+
+import FoodFinder from "@/app/eat/finder";
 
 type PreparedPhoto = { blob: Blob; preview: string };
 export default function MealCoach() {
   const [state, action, pending] = useActionState(coachMeals, {} as CoachResult);
+  const [restaurantMeal, setRestaurantMeal] = useState<MealSuggestion | null>(null);
   const [photos, setPhotos] = useState<Partial<Record<MealSlot, PreparedPhoto>>>({});
   const photoRef = useRef(photos);
-  const [values, setValues] = useState<Record<string, string>>({ age:"", sex:"Prefer not to say", height:"", weight:"", activity:"Lightly active", goal:"Balanced eating", preferences:"", restrictions:"" });
+  const [values, setValues] = useState<Record<string, string>>({ age:"", sex:"Prefer not to say", height:"", weight:"", activity:"Lightly active", goal:"Balanced eating", cuisine:"Any cuisine", preferences:"", restrictions:"" });
   function field(name: string) {
     return { name, value: values[name] || "", onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setValues(current => ({...current,[name]:event.target.value})) };
   }
@@ -49,7 +52,7 @@ export default function MealCoach() {
   const targets = uploaded.length ? planTargets(uploaded) : null;
   return <div className="coach-layout"><form action={data => {
     uploaded.forEach(meal => data.set(`photo_${meal}`,photos[meal]!.blob,`${meal}.jpg`));
-    setResultStale(false); action(data);
+    setResultStale(false); setRestaurantMeal(null); action(data);
   }} className="caption-form panel coach-form" aria-busy={busy} onChange={() => setResultStale(true)}>
     <p className="eyebrow">01 · TODAY’S MEALS</p><h2>Show what you’ve eaten.</h2><p className="upload-help">Add one, two or three meals already eaten today. We plan after the latest meal shown; after dinner, we plan tomorrow.</p>
     <div className="meal-uploads">{MEALS.map(meal => <fieldset key={meal} className="meal-upload"><legend>{meal}</legend>
@@ -68,6 +71,8 @@ export default function MealCoach() {
     <label className="field">Activity level<select {...field("activity")} disabled={busy}>{ACTIVITIES.map(a => <option key={a}>{a}</option>)}</select></label>
     <p className="eyebrow">03 · YOUR FOOD GOALS</p>
     <label className="field">My main goal<select {...field("goal")} disabled={busy}>{MEAL_GOALS.map(g => <option key={g}>{g}</option>)}</select></label>
+    <label className="field">Preferred cuisine<select {...field("cuisine")} disabled={busy}>{MEAL_CUISINES.map(c => <option key={c}>{c}</option>)}</select></label>
+    <p className="upload-help">Meal ideas follow your cuisine preference and dietary restrictions. After planning, choose a location to find restaurants for a suggested meal.</p>
     <label className="field">What else should we consider?<textarea {...field("preferences")} rows={3} maxLength={500} placeholder="e.g. I’m building muscle, train after class, and want quick affordable meals." disabled={busy} /></label>
     <label className="field">Dietary preferences or restrictions (optional)<textarea {...field("restrictions")} rows={2} maxLength={500} placeholder="e.g. Vegetarian, avoid dairy, peanut allergy" disabled={busy} /></label>
     <p className="upload-help">General food guidance for adults. Photos cannot establish portions, nutrition totals or inflammation. AI suggestions cannot verify allergens; check ingredients directly. Medical dietary targets need a clinician or registered dietitian.</p>
@@ -82,7 +87,8 @@ export default function MealCoach() {
     {state.plan && !pending && <>
       <p className="coach-summary">{state.plan.summary}</p>
       <h3>What your photos suggest</h3><ul className="coach-cards">{state.plan.observations.map(meal => <li className="panel" key={meal.meal}><p className="eyebrow">{meal.meal}</p><p>{meal.observation}</p><p className="upload-help">What’s uncertain: {meal.uncertainty}</p></li>)}</ul>
-      <h3>Your next meals</h3><ul className="coach-cards">{state.plan.suggestions.map(meal => <li className="panel next-meal-card" key={meal.meal}><p className="eyebrow">{state.day === "tomorrow" ? "Tomorrow’s " : ""}{meal.meal}</p><h4>{meal.idea}</h4><p>{meal.why}</p><p className="meal-swap"><strong>Another option:</strong> {meal.swap}</p></li>)}</ul>
+      <h3>Your next meals</h3><ul className="coach-cards">{state.plan.suggestions.map(meal => <li className="panel next-meal-card" key={meal.meal}><p className="eyebrow">{state.day === "tomorrow" ? "Tomorrow’s " : ""}{meal.meal}</p><h4>{meal.idea}</h4><p className="upload-help">{meal.cuisine} · {meal.dish}</p><p>{meal.why}</p><p className="meal-swap"><strong>Another option:</strong> {meal.swap}</p><button type="button" className="text-link" disabled={resultStale} aria-pressed={restaurantMeal?.meal === meal.meal} onClick={() => setRestaurantMeal(meal)}>Find restaurants for {meal.meal.toLowerCase()} ↗</button></li>)}</ul>
+      {restaurantMeal && !resultStale && <section aria-label={`Restaurants for ${restaurantMeal.meal}`}><h3>Find your {restaurantMeal.meal.toLowerCase()} nearby</h3><FoodFinder key={`${state.day}-${restaurantMeal.meal}-${restaurantMeal.dish}`} initialWants={restaurantMeal.cuisine} mealDish={restaurantMeal.dish} compact /></section>}
       <h3>Changes to try</h3><ul className="coach-points">{state.plan.improvements.map((text,i) => <li key={i}>{text}</li>)}</ul>
       <h3>To make this more useful</h3><ul className="coach-points">{state.plan.questions.map((text,i) => <li key={i}>{text}</li>)}</ul>
       <p className="upload-help">AI-generated suggestions, not verified nutrient analysis or medical treatment. The health references below inform the coach’s general guidance; they do not validate this individual AI plan.</p>

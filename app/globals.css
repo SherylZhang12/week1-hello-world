@@ -343,3 +343,17 @@ h1, h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
 .persona-example small { font-size:10px; color:var(--muted); }
 @media(max-width:900px) { .unified-header { display:grid; grid-template-columns:1fr auto; }.unified-header nav { grid-column:1/-1; grid-row:2; gap:12px 18px; }.unified-header .header-account { grid-column:2; grid-row:1; }.start-cards { gap:12px; }.start-card { padding:18px; } }
 @media(max-width:640px) { .start-cards,.posting-guide ol { grid-template-columns:1fr; }.unified-header .brand { font-size:23px; }.header-account { gap:10px; }.header-account .button { padding:9px 12px; }.unified-header nav { font-size:12px; }.start-guide h2 { font-size:28px; } }
+
+.coach-finder { grid-template-columns:minmax(0,1fr); gap:20px; padding-bottom:16px; }
+.coach-finder > *, .coach-finder .field { min-width:0; }
+.coach-finder h2 { font-size:23px; }
+
+.dining-group { display:grid; gap:18px; }
+.diner-card { min-width:0; border:1px solid var(--line); border-radius:12px; padding:16px; display:grid; gap:10px; }
+.diner-card legend { padding:0 8px; font-weight:700; }
+.group-order { border-top:1px solid var(--line); margin-top:18px; padding-top:16px; }
+.group-order summary { cursor:pointer; font-weight:700; }
+.group-order form { display:grid; gap:12px; margin-top:16px; }
+.group-order ul { padding-left:20px; }
+.group-order h4 { margin:16px 0 8px; }
+.group-order p,.group-order li { overflow-wrap:anywhere; }
