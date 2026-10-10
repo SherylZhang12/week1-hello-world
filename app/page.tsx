@@ -1,7 +1,8 @@
+import { StartHere } from "@/app/components/getting-started";
+import SiteHeader from "@/app/components/site-header";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/actions";
 import Link from "next/link";
-import { Arrow, Brand, Footer } from "./components/brand";
+import { Arrow, Footer } from "./components/brand";
 import FoodArt from "./components/food-art";
 
 export default async function Home() {
@@ -10,23 +11,22 @@ export default async function Home() {
   const { data: foods, error } = await supabase.from("favorite_foods").select("*").order("id");
 
   return <div className="site-shell">
-    <header className="site-header"><Brand /><nav aria-label="Main navigation">
-      <Link href="/captions" className="nav-link">Food community ✦</Link>
-      {user ? <><Link href="/profile" className="nav-link">My profile</Link><form action={signOut}><button className="button button-small button-outline">Sign out</button></form></> : <Link href="/login" className="button button-small">Sign in <Arrow /></Link>}
-    </nav></header>
+    <SiteHeader loggedIn={!!user} />
     <main id="main-content">
       <section className="hero">
-        <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> YOUR FOOD. THE CHEF’S VERDICT.</p>
-          <h1>Gordon Ramsay-style<br /><em>food critiques.</em></h1>
-          <p className="hero-description">Upload your real meal. Get original Gordon Ramsay-style AI commentary: fiery roasts, hard-earned compliments, and a verdict worth sharing.</p>
-          <p className="chef-disclosure">AI style imitation. Not Gordon Ramsay’s actual review or endorsement.</p><Link href="/captions" className="button">Enter the kitchen <span aria-hidden="true">✦</span></Link><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
+        <div className="hero-copy"><p className="eyebrow"><span className="small-dot" /> FOLLOW YOUR CRAVINGS. SHARE YOUR FINDS.</p>
+          <h1>Your next bite.<br /><em>Your honest take.</em></h1>
+          <p className="hero-description">Find food that fits today’s cravings and plan your next meals around your goals. Share real photos, restaurant names and honest reviews. Then hand the mic to a fiery chef, your cat or your dog.</p>
+          <div className="hero-actions"><Link href="/eat" className="button">What should I eat? <Arrow /></Link><Link href="/captions#create-caption" className="button button-outline">Share a meal ✦</Link></div><p className="chef-disclosure">Your real experience, plus playful AI reactions. Gordon Ramsay-style commentary is one optional voice, not his actual review.</p><p style={{marginTop: 16}}><a href="#favorites" className="text-link">Explore the original collection ↓</a></p>
           <div className="hero-note"><span aria-hidden="true">✳</span> From around the world, with love.</div>
         </div>
         <div className="hero-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" />
-          <span className="handwritten">ready for the chef’s verdict?</span><FoodArt name="sushi" className="hero-food" />
-          <div className="floating-label"><span aria-hidden="true">✦</span> Good food. Fiery feedback.</div><span className="hero-spark" aria-hidden="true">✳</span>
+          <span className="handwritten">what’s your next craving?</span><FoodArt name="sushi" className="hero-food" />
+          <div className="floating-label"><span aria-hidden="true">✦</span> Discover. Eat. Share.</div><span className="hero-spark" aria-hidden="true">✳</span>
         </div>
       </section>
+      <StartHere />
+      <section className="meal-coach-banner"><div><p className="eyebrow">MAKE THE REST OF YOUR DAY EASIER</p><h2>Breakfast eaten. What’s next?</h2><p>Upload today’s meals and get ideas for lunch, dinner or tomorrow, shaped by your food goals.</p></div><Link href="/meal-coach" className="button button-outline">Try the daily meal coach <Arrow /></Link></section>
       <section id="favorites" className="collection" aria-labelledby="collection-heading">
         <div className="section-heading"><div><p className="eyebrow">THE SHORTLIST</p><h2 id="collection-heading">My favorite foods<span className="brand-dot">.</span></h2></div><p>Personally picked. Happily rated.</p></div>
         {error && <p role="alert" className="notice notice-error">Could not load favorite foods. Please try again later.</p>}

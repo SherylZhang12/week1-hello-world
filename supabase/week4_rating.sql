@@ -43,6 +43,17 @@ alter table public.caption_generations add constraint food_photo_metadata_check 
   and (original_path is null or split_part(original_path, '/', 1) = user_id::text)
   and (image_path is null or split_part(image_path, '/', 1) = user_id::text)
 );
+alter table public.caption_generations add column if not exists personal_review text not null default '';
+alter table public.caption_generations add column if not exists personal_rating smallint;
+alter table public.caption_generations drop constraint if exists food_personal_review_check;
+alter table public.caption_generations add constraint food_personal_review_check
+  check(char_length(personal_review) <= 1000 and (personal_rating is null or personal_rating between 1 and 5));
+create table if not exists public.food_search_limits (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  day date not null,
+  attempts integer not null default 0,
+  last_attempt timestamptz
+);
 create table if not exists public.food_saves (
   user_id uuid not null references auth.users(id) on delete cascade,
   generation_id uuid not null references public.caption_generations(id) on delete cascade,
@@ -90,14 +101,14 @@ declare p record;
 begin
   for p in select tablename, policyname from pg_policies
     where schemaname = 'public' and tablename in
-      ('profiles','favorite_foods','caption_generations','caption_votes','caption_generation_limits','food_saves') loop
+      ('profiles','favorite_foods','caption_generations','caption_votes','caption_generation_limits','food_saves','food_search_limits') loop
     execute format('drop policy %I on public.%I', p.policyname, p.tablename);
   end loop;
 end $$;
 
-revoke all on public.caption_generations, public.caption_votes, public.caption_generation_limits, public.food_saves from anon, authenticated;
+revoke all on public.caption_generations, public.caption_votes, public.caption_generation_limits, public.food_saves, public.food_search_limits from anon, authenticated;
 grant select on public.caption_generations, public.caption_votes to authenticated;
-grant insert (user_id, scene, dish, tone, animal_action, reply_style, language, media_kind, caption, prompt, system_prompt, model, original_path, image_path, restaurant, neighborhood, display_name) on public.caption_generations to authenticated;
+grant insert (user_id, scene, dish, tone, animal_action, reply_style, language, media_kind, caption, prompt, system_prompt, model, original_path, image_path, restaurant, neighborhood, display_name, personal_review, personal_rating) on public.caption_generations to authenticated;
 grant insert (user_id, generation_id, value) on public.caption_votes to authenticated;
 grant update (value) on public.caption_votes to authenticated;
 grant update (published_at) on public.caption_generations to authenticated;
@@ -141,7 +152,7 @@ create function public.get_caption_feed(p_sort text default 'new', p_mine boolea
 returns table (
   id uuid, caption text, scene text, dish text, tone text, animal_action text, reply_style text, language text, media_kind text, model text,
   created_at timestamptz, score bigint, vote_count bigint, my_vote smallint, is_owner boolean,
-  original_path text, image_path text, restaurant text, neighborhood text, display_name text, published_at timestamptz, is_saved boolean
+  original_path text, image_path text, restaurant text, neighborhood text, display_name text, published_at timestamptz, is_saved boolean, personal_review text, personal_rating smallint
 )
 language sql stable security definer set search_path = ''
 as $$
@@ -149,7 +160,7 @@ as $$
     coalesce(v.score, 0)::bigint, coalesce(v.vote_count, 0)::bigint,
     mine.value, coalesce(g.user_id = auth.uid(), false),
     g.original_path, g.image_path, g.restaurant, g.neighborhood, g.display_name, g.published_at,
-    exists(select 1 from public.food_saves saved where saved.generation_id = g.id and saved.user_id = auth.uid())
+    exists(select 1 from public.food_saves saved where saved.generation_id = g.id and saved.user_id = auth.uid()), g.personal_review, g.personal_rating
   from public.caption_generations g
   left join lateral (
     select sum(cv.value)::bigint as score, count(*)::bigint as vote_count
@@ -219,6 +230,28 @@ end;
 $$;
 revoke all on function public.claim_caption_generation() from public, anon;
 grant execute on function public.claim_caption_generation() to authenticated;
+-- Separate restaurant searches from AI credits; concurrent requests serialize.
+create or replace function public.claim_food_search()
+returns text language plpgsql security definer set search_path = ''
+as $$
+declare
+  caller uuid := auth.uid();
+  today date := (now() at time zone 'America/New_York')::date;
+  limits public.food_search_limits%rowtype;
+begin
+  if caller is null then raise exception 'Authentication required'; end if;
+  insert into public.food_search_limits(user_id, day) values(caller, today) on conflict(user_id) do nothing;
+  select * into limits from public.food_search_limits where user_id = caller for update;
+  if limits.last_attempt > now() - interval '15 seconds' then return 'cooldown'; end if;
+  if limits.day = today and limits.attempts >= 20 then return 'daily_limit'; end if;
+  update public.food_search_limits set day = today,
+    attempts = case when limits.day = today then limits.attempts + 1 else 1 end,
+    last_attempt = now() where user_id = caller;
+  return 'ok';
+end;
+$$;
+revoke all on function public.claim_food_search() from public, anon;
+grant execute on function public.claim_food_search() to authenticated;
 commit;
 
 -- Verification: every row should have rls_enabled = true. Inspect existing

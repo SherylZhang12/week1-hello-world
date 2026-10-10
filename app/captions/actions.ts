@@ -2,13 +2,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generateChefReview } from "@/lib/ai/gemini";
-import { imageMime, ownedPhotoPath, validatePhotoDetails } from "@/lib/food-photo";
+import { imageMime, ownedPhotoPath, validatePhotoDetails, validatePersonalReview } from "@/lib/food-photo";
 import { type ActionResult, validVote } from "@/lib/captions";
 
 export async function createCaption(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return { error: "Sign in to get a chef-style critique." };
+  if (authError || !user) return { error: "Sign in to share a meal and add an AI reaction." };
   const scene = String(form.get("scene") ?? "").trim();
   const dish = String(form.get("dish") ?? "").trim();
   const tone = String(form.get("tone") ?? "");
@@ -16,28 +16,33 @@ export async function createCaption(_previous: ActionResult, form: FormData): Pr
   const language = String(form.get("language") ?? "");
   const restaurant = String(form.get("restaurant") ?? "").trim();
   const neighborhood = String(form.get("neighborhood") ?? "");
+  const personal_review = String(form.get("personal_review") ?? "").trim();
+  const rating = String(form.get("personal_rating") ?? "").trim();
+  const personal_rating = rating ? Number(rating) : null;
+  const reviewError = validatePersonalReview(personal_review, rating);
+  if (reviewError) return { error: reviewError };
   const original_path = String(form.get("original_path") ?? "");
   const invalid = validatePhotoDetails(scene, dish, tone, restaurant, neighborhood, reply_style, language);
   if (invalid) return { error: invalid };
   if (!ownedPhotoPath(original_path, user.id)) return { error: "Upload your own food photo first." };
-  if (!process.env.GEMINI_API_KEY) return { error: "Chef commentary is not configured yet. Please try again after setup." };
+  if (!process.env.GEMINI_API_KEY) return { error: "AI reactions are not configured yet. Please try again after setup." };
   const { data: photo, error: photoError } = await supabase.storage.from("food-photos").download(original_path);
   if (photoError || !photo || !photo.size || photo.size > 5 * 1024 * 1024) return { error: "Could not read your photo. Upload a JPG, PNG or WebP up to 5 MB." };
   const bytes = new Uint8Array(await photo.arrayBuffer());
   const mimeType = imageMime(bytes);
   if (!mimeType) return { error: "This photo format is not supported." };
   const { data: credit, error: creditError } = await supabase.rpc("claim_caption_generation");
-  if (creditError) return { error: "Chef commentary is not available yet. Please try again later." };
-  if (credit !== "ok") return { error: credit === "cooldown" ? "Please wait 30 seconds between generations." : "You have reached 10 critique attempts today. Come back tomorrow!" };
+  if (creditError) return { error: "AI reactions are not available yet. Please try again later." };
+  if (credit !== "ok") return { error: credit === "cooldown" ? "Please wait 30 seconds between generations." : "You have reached 10 AI reaction attempts today. Come back tomorrow!" };
   try {
     const generated = await generateChefReview(bytes, mimeType, scene, dish, tone, reply_style, language);
     const { data: profile } = await supabase.from("profiles").select("first_name").eq("id", user.id).maybeSingle();
     const display_name = String(profile?.first_name || "Food explorer").slice(0, 80);
-    const { error } = await supabase.from("caption_generations").insert({ user_id: user.id, scene, dish, tone, reply_style, language, media_kind: "chef_text", restaurant, neighborhood, original_path, display_name, ...generated });
-    if (error) return { error: "Your chef critique could not be saved. Please try again later." };
-  } catch (error) { return { error: error instanceof Error ? error.message : "Could not write your chef critique. Please try again." }; }
+    const { error } = await supabase.from("caption_generations").insert({ user_id: user.id, scene, dish, tone, reply_style, language, media_kind: "chef_text", restaurant, neighborhood, personal_review, personal_rating, original_path, display_name, ...generated });
+    if (error) return { error: "Your meal and AI reaction could not be saved. Please try again later." };
+  } catch (error) { return { error: error instanceof Error ? error.message : "Could not write your AI reaction. Please try again." }; }
   revalidatePath("/captions");
-  return { success: "Your private preview is ready. Open My posts to read it, copy it or publish. Generate again to try another voice." };
+  return { success: "Your private meal preview is ready. Open My posts to read it, copy the reaction or publish. Your personal review and selected AI reaction appear together." };
 }
 
 export async function publishPhoto(id: string): Promise<ActionResult> {

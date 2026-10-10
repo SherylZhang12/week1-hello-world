@@ -1,11 +1,11 @@
+import SiteHeader from "@/app/components/site-header";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateNames } from "./actions";
 import AvatarUpload from "./avatar-upload";
-import { Brand, Footer } from "../components/brand";
-import { signOut } from "../actions";
+import { Footer } from "../components/brand";
 
 type Profile = { first_name: string | null; last_name: string | null; avatar_path: string | null };
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ error?: string; updated?: string }> }) {
@@ -23,7 +23,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Your little corner";
   const initials = [profile?.first_name?.[0], profile?.last_name?.[0]].filter(Boolean).join("").toUpperCase() || "F";
   return <div className="site-shell">
-    <header className="site-header"><Brand /><nav aria-label="Main navigation"><Link href="/" className="nav-link">The collection</Link><form action={signOut}><button className="button button-small button-outline">Sign out</button></form></nav></header>
+    <SiteHeader loggedIn={!!user} />
     <main id="main-content">
       <div className="page-heading"><p className="eyebrow">A LITTLE MORE YOU</p><h1>My profile<span className="brand-dot">.</span></h1><p>Your name, your photo, your place at the table.</p></div>
       {loadError && <p role="alert" className="notice notice-error">Could not load your profile. Run the Week 3 database setup first.</p>}
