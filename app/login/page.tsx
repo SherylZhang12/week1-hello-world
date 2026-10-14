@@ -15,6 +15,9 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
+      const requestedNext = searchParams.get("next") || "";
+      const safeNext = /^\/(?:eat|captions|meal-coach|profile)(?:[/?#]|$)/.test(requestedNext) ? requestedNext : "/captions";
+      document.cookie = `foodfolio_next=${encodeURIComponent(safeNext)}; Path=/; Max-Age=600; SameSite=Lax; Secure`;
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google", options: { redirectTo: `${window.location.origin}/auth/callback` },
