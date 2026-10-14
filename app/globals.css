@@ -51,7 +51,7 @@ h1, h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
 .food-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; list-style: none; padding: 0; margin: 0; }
 .food-card { overflow: hidden; background: #fffcf7; border: 1px solid var(--line); border-radius: 16px; transition: transform .25s, box-shadow .25s; }
 .food-card:hover { transform: translateY(-5px); box-shadow: 0 15px 25px #4b38220a; }
-.food-card-link { display:block; height:100%; color:inherit; text-decoration:none; }
+.food-card-link { display:block; color:inherit; text-decoration:none; }
 .food-picture { position: relative; background: #eee8d7; }
 .food-tone-1 .food-picture { background: #f4e2d5; }
 .food-tone-2 .food-picture { background: #e7eadc; }
