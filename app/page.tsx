@@ -4,11 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Arrow, Footer } from "./components/brand";
 import FoodArt from "./components/food-art";
+import FavoriteRating from "./components/favorite-rating";
 
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: foods, error } = await supabase.from("favorite_foods").select("*").order("id");
+  const { data: personalRatings } = user
+    ? await supabase.from("favorite_food_ratings").select("food_id,rating").eq("user_id", user.id)
+    : { data: null };
+  const ratingByFood = new Map((personalRatings ?? []).map((item) => [Number(item.food_id), Number(item.rating)]));
 
   return <div className="site-shell">
     <SiteHeader loggedIn={!!user} />
@@ -33,9 +38,9 @@ export default async function Home() {
         {!error && !foods?.length && <p className="notice">The collection is waiting for its first favorite.</p>}
         <ul className="food-grid">{foods?.map((food, index) => { const target = `/eat?food=${encodeURIComponent(String(food.name))}`; return <li key={food.id} className={`food-card food-tone-${index % 3}`}><Link className="food-card-link" href={user ? target : `/login?next=${encodeURIComponent(target)}`} aria-label={`Find ${food.name} near me`}>
           <div className="food-picture"><span className="food-number">{String(index + 1).padStart(2, "0")}</span><span className="food-action-badge">Search nearby ↗</span><FoodArt name={String(food.name)} /></div>
-          <div className="food-info"><p className="food-country"><span aria-hidden="true">⌖</span> {food.country}</p><div className="food-title-row"><h3>{food.name}</h3><span className="rating"><span aria-hidden="true">★</span> {food.rating}<small>/10</small></span></div><strong className="food-card-action">Find {food.name} restaurants near me →</strong></div>
-        </Link></li>; })}</ul>
-        <p className="collection-note">The cards come from your Week 2 Supabase table. Selecting one now hands that choice to the live restaurant finder instead of ending at a static display.</p>
+          <div className="food-info"><p className="food-country"><span aria-hidden="true">⌖</span> {food.country}</p><div className="food-title-row"><h3>{food.name}</h3><span className="rating sample-rating"><span aria-hidden="true">★</span> {food.rating}<small>/10 · Week 2 sample</small></span></div><strong className="food-card-action">Find {food.name} restaurants near me →</strong></div>
+        </Link><FavoriteRating foodId={Number(food.id)} foodName={String(food.name)} initialRating={ratingByFood.get(Number(food.id)) ?? null} loggedIn={!!user} /></li>; })}</ul>
+        <p className="collection-note">Names, countries and sample scores still come directly from your original Week 2 Supabase table. Signed-in ratings are stored separately for each user, so the Week 2 records are never overwritten.</p>
       </section>
       <section className="join-banner"><div><p className="eyebrow">YOUR OWN LITTLE CORNER</p><h2>{user ? "Welcome back to the table." : "Come for the food. Stay a while."}</h2><p>{user ? "Make yourself at home. Your profile and members-only space are ready." : "Sign in to make your profile yours and step into the members-only space."}</p></div><Link href={user ? "/profile" : "/login"} className="button">{user ? "Your profile" : "Join the table"} <Arrow /></Link></section>
       {user && <p className="account-note">Signed in as {user.email} · <Link href="/private">Members-only page ↗</Link></p>}

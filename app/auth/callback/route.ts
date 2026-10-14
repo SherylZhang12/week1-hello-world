@@ -13,7 +13,7 @@ export async function GET(request: Request) {
       const cookieStore = await cookies();
       let requestedNext = "";
       try { requestedNext = decodeURIComponent(cookieStore.get("foodfolio_next")?.value || ""); } catch { requestedNext = ""; }
-      const next = /^\/(?:eat|captions|meal-coach|profile)(?:[/?#]|$)/.test(requestedNext) ? requestedNext : "/captions";
+      const next = requestedNext === "/#favorites" || /^\/(?:eat|captions|meal-coach|profile)(?:[/?#]|$)/.test(requestedNext) ? requestedNext : "/captions";
       const response = NextResponse.redirect(`${origin}${next}`);
       response.cookies.delete("foodfolio_next");
       return response;
