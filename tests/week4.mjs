@@ -59,6 +59,37 @@ test('favorite cards keep the score and use the concise sample label',()=>{
   assert.doesNotMatch(page,/Week 2 sample|Names, countries and sample scores/);
 });
 
+const foodPreferences=load('lib/food-preferences.ts');
+test('general food preferences normalize names and validate 1–10 ratings',()=>{
+  assert.equal(foodPreferences.cleanFoodPreferenceName('  Crème   brûlée  ').name,'Crème brûlée');
+  assert.equal(foodPreferences.cleanFoodPreferenceName('RAMEN').key,'ramen');
+  assert.equal(foodPreferences.cleanFoodPreferenceName('x'.repeat(81)),null);
+  assert.equal(foodPreferences.validFoodPreferenceRating(10),true);
+  assert.equal(foodPreferences.validFoodPreferenceRating(0),false);
+  assert.equal(foodPreferences.validFoodPreferenceRating(4.5),false);
+});
+
+test('food preference writes belong to the signed-in user and use normalized food keys',async()=>{
+  const calls=[];
+  const query={upsert:async(row,options)=>{calls.push([row,options]);return {error:null};}};
+  const supabase={auth:{getUser:async()=>({data:{user:{id:'user-a'}},error:null})},from:name=>{assert.equal(name,'user_food_preferences');return query;}};
+  const actions=load('app/favorites/actions.ts',{'@/lib/supabase/server':{createClient:async()=>supabase},'@/lib/food-preferences':foodPreferences,'next/cache':{revalidatePath:path=>calls.push(path)}});
+  assert.ok((await actions.saveFavoriteRating('  Soup Dumplings ',9)).success);
+  assert.equal(calls[0][0].user_id,'user-a');assert.equal(calls[0][0].food_name,'Soup Dumplings');assert.equal(calls[0][0].food_key,'soup dumplings');assert.equal(calls[0][0].rating,9);assert.match(calls[0][0].updated_at,/Z$/);
+  assert.equal(calls[0][1].onConflict,'user_id,food_key');
+  assert.ok((await actions.saveFavoriteRating('Soup',11)).error);
+});
+
+test('food preferences are private under RLS and the homepage has a fourth More card',()=>{
+  const sql=fs.readFileSync('supabase/user_food_preferences.sql','utf8');
+  const page=fs.readFileSync('app/page.tsx','utf8');
+  assert.match(sql,/enable row level security/);
+  assert.match(sql,/auth\.uid\(\)\) = user_id/g);
+  assert.match(sql,/favorite_food_ratings/);
+  assert.match(page,/>More<\/h3>/);
+  assert.match(page,/Add a food and rate it/);
+});
+
 test('quota failures never fabricate a chef critique',async()=>{process.env.GEMINI_API_KEY='test-only';const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async()=>new Response('{}',{status:429})});await assert.rejects(ai.generateChefReview(new Uint8Array([255,216,255]),'image/jpeg','','Pizza','Gordon Ramsay','Roast','English'),/quota/);});
 test('malformed, blocked and oversized responses do not become posts',async()=>{for(const text of ['', '{"caption":""}', JSON.stringify({caption:'x'.repeat(701)}), '{"caption":3}']){const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{text}]}}]}),{status:200})});await assert.rejects(ai.generateChefReview(new Uint8Array([255,216,255]),'image/jpeg','','Pizza','Gordon Ramsay','Roast','English'),/No usable/);}});
 test('request includes the real photo, persona, style and language and asks only for JSON text',async()=>{let request;const jpg=new Uint8Array([255,216,255,0]);const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{assert.match(url,/gemini-3.1-flash-lite/);request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({caption:'What happened to that plating? At least the egg looks beautiful.'})}]}}]}),{status:200});}});const out=await ai.generateChefReview(jpg,'image/jpeg','After class','Ramen','Gordon Ramsay','Roast then hype','English');assert.equal(request.contents[0].parts[1].inlineData.data,Buffer.from(jpg).toString('base64'));const prompt=JSON.parse(request.contents[0].parts[0].text);assert.equal(prompt.persona,'Gordon Ramsay');assert.equal(prompt.reaction,'Roast then hype');assert.equal(prompt.language,'English');assert.match(request.systemInstruction.parts[0].text,/not the real Gordon Ramsay/);assert.match(request.systemInstruction.parts[0].text,/never infer flavor, doneness/);assert.equal(request.generationConfig.responseMimeType,'application/json');assert.equal(request.generationConfig.responseModalities,undefined);assert.match(out.caption,/plating/);assert.equal(out.prompt,request.contents[0].parts[0].text);});

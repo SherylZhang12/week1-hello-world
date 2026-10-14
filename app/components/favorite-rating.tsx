@@ -4,8 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { saveFavoriteRating } from "@/app/favorites/actions";
 
-export default function FavoriteRating({ foodId, foodName, initialRating, loggedIn }: {
-  foodId: number;
+export default function FavoriteRating({ foodName, initialRating, loggedIn }: {
   foodName: string;
   initialRating: number | null;
   loggedIn: boolean;
@@ -22,7 +21,7 @@ export default function FavoriteRating({ foodId, foodName, initialRating, logged
   function save() {
     setMessage("");
     startTransition(async () => {
-      const result = await saveFavoriteRating(foodId, rating);
+      const result = await saveFavoriteRating(foodName, rating);
       if (result.error) setMessage(result.error);
       else { setSavedRating(rating); setMessage(result.success ?? "Rating saved."); }
     });

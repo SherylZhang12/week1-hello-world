@@ -16,7 +16,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const requestedNext = searchParams.get("next") || "";
-      const safeNext = requestedNext === "/#favorites" || /^\/(?:eat|captions|meal-coach|profile)(?:[/?#]|$)/.test(requestedNext) ? requestedNext : "/captions";
+      const safeNext = requestedNext === "/#favorites" || /^\/(?:eat|captions|favorites|meal-coach|profile)(?:[/?#]|$)/.test(requestedNext) ? requestedNext : "/captions";
       document.cookie = `foodfolio_next=${encodeURIComponent(safeNext)}; Path=/; Max-Age=600; SameSite=Lax; Secure`;
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
