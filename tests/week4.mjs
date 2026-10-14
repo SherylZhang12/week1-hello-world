@@ -53,6 +53,12 @@ test('favorite-card link does not cover and clip the personal rating controls',(
   assert.match(css,/\.user-rating-box\s*\{/);
 });
 
+test('favorite cards keep the score and use the concise sample label',()=>{
+  const page=fs.readFileSync('app/page.tsx','utf8');
+  assert.match(page,/food\.rating}<small>\/10 · sample<\/small>/);
+  assert.doesNotMatch(page,/Week 2 sample|Names, countries and sample scores/);
+});
+
 test('quota failures never fabricate a chef critique',async()=>{process.env.GEMINI_API_KEY='test-only';const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async()=>new Response('{}',{status:429})});await assert.rejects(ai.generateChefReview(new Uint8Array([255,216,255]),'image/jpeg','','Pizza','Gordon Ramsay','Roast','English'),/quota/);});
 test('malformed, blocked and oversized responses do not become posts',async()=>{for(const text of ['', '{"caption":""}', JSON.stringify({caption:'x'.repeat(701)}), '{"caption":3}']){const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async()=>new Response(JSON.stringify({candidates:[{content:{parts:[{text}]}}]}),{status:200})});await assert.rejects(ai.generateChefReview(new Uint8Array([255,216,255]),'image/jpeg','','Pizza','Gordon Ramsay','Roast','English'),/No usable/);}});
 test('request includes the real photo, persona, style and language and asks only for JSON text',async()=>{let request;const jpg=new Uint8Array([255,216,255,0]);const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{assert.match(url,/gemini-3.1-flash-lite/);request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({caption:'What happened to that plating? At least the egg looks beautiful.'})}]}}]}),{status:200});}});const out=await ai.generateChefReview(jpg,'image/jpeg','After class','Ramen','Gordon Ramsay','Roast then hype','English');assert.equal(request.contents[0].parts[1].inlineData.data,Buffer.from(jpg).toString('base64'));const prompt=JSON.parse(request.contents[0].parts[0].text);assert.equal(prompt.persona,'Gordon Ramsay');assert.equal(prompt.reaction,'Roast then hype');assert.equal(prompt.language,'English');assert.match(request.systemInstruction.parts[0].text,/not the real Gordon Ramsay/);assert.match(request.systemInstruction.parts[0].text,/never infer flavor, doneness/);assert.equal(request.generationConfig.responseMimeType,'application/json');assert.equal(request.generationConfig.responseModalities,undefined);assert.match(out.caption,/plating/);assert.equal(out.prompt,request.contents[0].parts[0].text);});
