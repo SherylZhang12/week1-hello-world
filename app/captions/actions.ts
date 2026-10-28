@@ -35,11 +35,15 @@ export async function createCaption(_previous: ActionResult, form: FormData): Pr
   if (creditError) return { error: "AI reactions are not available yet. Please try again later." };
   if (credit !== "ok") return { error: credit === "cooldown" ? "Please wait 30 seconds between generations." : "You have reached 10 AI reaction attempts today. Come back tomorrow!" };
   try {
-    const generated = await generateChefReview(bytes, mimeType, scene, dish, tone, reply_style, language);
+    const generated = await generateChefReview(bytes, mimeType, scene, dish, tone, reply_style, language, supabase);
     const { data: profile } = await supabase.from("profiles").select("first_name").eq("id", user.id).maybeSingle();
     const display_name = String(profile?.first_name || "Food explorer").slice(0, 80);
     const { error } = await supabase.from("caption_generations").insert({ user_id: user.id, scene, dish, tone, reply_style, language, media_kind: "chef_text", restaurant, neighborhood, personal_review, personal_rating, original_path, display_name, ...generated });
-    if (error) return { error: "Your meal and AI reaction could not be saved. Please try again later." };
+    if (error) {
+      const requestId = 'generation_request_id' in generated ? generated.generation_request_id : null;
+      if (requestId) await supabase.rpc('foodfolio_finish_generation',{p_request:requestId,p_status:'failed',p_generation:null,p_error:'AI output generated but saving the media record failed.'});
+      return { error: "Your meal and AI reaction could not be saved. Please try again later." };
+    }
   } catch (error) { return { error: error instanceof Error ? error.message : "Could not write your AI reaction. Please try again." }; }
   revalidatePath("/captions");
   return { success: "Your private meal preview is ready. Open My posts to read it, copy the reaction or publish. Your personal review and selected AI reaction appear together." };

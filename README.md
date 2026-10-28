@@ -47,3 +47,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+## Week 7 generation observability
+
+Food-photo caption creation now runs a two-step, database-configured prompt chain.
+The admin app can inspect chains/steps, edit selection weights, terms, examples,
+provider/model records and signup rules. New requests and per-step model responses
+are logged with timings and token counts; successful caption inserts atomically
+complete the associated request. Photo bytes and API keys are not logged. Existing
+posts are not presented as invented historical provider calls. Meal-coach and
+restaurant-assistance calls remain outside this caption-chain trace.
+
+Apply the Week 7 SQL from the separate foodfolio-admin repo before deploying this
+version. Keep the existing GEMINI_API_KEY environment variable. No service-role
+key is needed. Run `npm run test:week4` and `npm run test:week7` to verify.
