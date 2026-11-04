@@ -4,7 +4,7 @@ import { Footer } from "@/app/components/brand";
 import { createClient } from "@/lib/supabase/server";
 import MealCoach from "./coach";
 export const metadata = { title: "Foodfolio | Daily meal coach" };
-export const maxDuration = 60;
+export const maxDuration = 180;
 export default async function MealCoachPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

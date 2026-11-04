@@ -7,7 +7,7 @@ import FoodArt from "@/app/components/food-art";
 import { type Caption, validVote } from "@/lib/captions";
 import { NEIGHBORHOODS, dailyChefChallenge } from "@/lib/food-photo";
 import { Generator, VoteControls, PostControls, ChefPost } from "./controls";
-export const maxDuration = 120;
+export const maxDuration = 180;
 export const metadata = { title: "Foodfolio | Real meals, honest reviews & playful reactions" };
 export default async function CaptionsPage({ searchParams }: { searchParams: Promise<{ sort?: string; mine?: string; saved?: string; area?: string; post?: string; restaurant?: string }> }) {
   const params = await searchParams;

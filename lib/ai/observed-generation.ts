@@ -12,7 +12,7 @@ export async function generateObservedReview(client:SupabaseClient,coreSystem:st
  try{
   if(!chain.steps?.length)throw Error('The selected prompt chain has no steps.');
   for(const step of chain.steps){
-   const system=coreSystem+'\n\nCURRENT CHAIN STEP: '+step.instruction;
+   const system=coreSystem+'\n\nCURRENT CHAIN STEP: '+step.instruction+'\n'+(step.position===chain.steps[chain.steps.length-1].position?'Final step: return the finished caption.':'Intermediate step: the caption field may contain working notes requested by this instruction, rather than a published reaction. Keep them under 700 characters.');
    const prompt=JSON.stringify({...input,chain_name:chain.name,step:step.position,previous_draft:caption||undefined,glossary:chain.terms,examples:chain.examples});
    const parts:GeminiPart[]=[{text:prompt}];if(step.position===chain.steps[0].position)parts.push({inlineData:{mimeType,data:Buffer.from(photo).toString('base64')}});
    const payload={system_prompt:system,text_prompt:prompt,photo_attached:parts.length>1};const started=Date.now();let result;

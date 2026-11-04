@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Footer } from "@/app/components/brand";
 import FoodFinder from "./finder";
 export const metadata = { title: "Foodfolio | What should I eat today?" };
-export const maxDuration = 60;
+export const maxDuration = 180;
 const QUICK_CRAVINGS: Record<string, string> = { sushi: "Japanese", "hot pot": "Chinese", pasta: "Italian" };
 export default async function EatPage({ searchParams }: { searchParams: Promise<{ food?: string }> }) {
   const requestedFood = String((await searchParams).food || "").trim().slice(0, 50);

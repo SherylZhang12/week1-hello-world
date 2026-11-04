@@ -7,6 +7,7 @@ function load(path, dependencies = {}) {
   const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS, target:ts.ScriptTarget.ES2022}}).outputText;
   const loadedModule = {exports:{}};
   vm.runInNewContext(code, {module:loadedModule, exports:loadedModule.exports, require:name => {
+    if(name==='./gemini-request')return {requestGemini:dependencies.fetch};
     if (!(name in dependencies)) throw new Error(`Unexpected dependency: ${name}`);
     return dependencies[name];
   }, process, Intl, Date, Error, FormData, Blob, Buffer, Uint8Array, crypto:globalThis.crypto, Response, AbortSignal, fetch:dependencies.fetch});
@@ -211,8 +212,8 @@ test('meal quota and failed provider requests return no plan',async()=>{
 test('meal Gemini prompt labels photos and asks for uncertainty and correct next slots',async()=>{
   let request;
   const provider=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(planFixture())}]}}]}));}});
-  const coach=load('lib/ai/meal-coach.ts',{'server-only':{},'./gemini':provider,'@/lib/meal-coach':mealHelpers});
-  const result=await coach.generateMealPlan(mealHelpers.readMealProfile(coachForm()).profile,[{meal:'Breakfast',bytes:new Uint8Array([255,216,255]),mimeType:'image/jpeg',notes:'Two eggs'}]);
+  const coach=load('lib/ai/meal-coach.ts',{'server-only':{},'./gemini':provider,'./workflow':{runWorkflow:async(options,module,system,parts,schema,validate)=>{assert.equal(module,'meal-coach');const r=await provider.requestGemini(system,parts,schema);return {value:validate(r.text),trace:[]};}},'@/lib/meal-coach':mealHelpers});
+  const result=await coach.generateMealPlan(mealHelpers.readMealProfile(coachForm()).profile,[{meal:'Breakfast',bytes:new Uint8Array([255,216,255]),mimeType:'image/jpeg',notes:'Two eggs'}],{client:{}});
   assert.equal(result.plan.suggestions.length,2);const context=JSON.parse(request.contents[0].parts[0].text);assert.equal(JSON.stringify(context.target_meals),JSON.stringify(['Lunch','Dinner']));assert.equal(context.plan_day,'today');assert.equal(context.profile.cuisine,'Any cuisine');assert.ok(request.generationConfig.responseJsonSchema.properties.suggestions.items.required.includes('dish'));assert.match(request.systemInstruction.parts[0].text,/Do not name or invent restaurants/);assert.equal(request.contents[0].parts[2].inlineData.data,Buffer.from([255,216,255]).toString('base64'));assert.match(request.systemInstruction.parts[0].text,/never a diagnosis/);assert.match(request.systemInstruction.parts[0].text,/never invent an unuploaded earlier meal/);assert.match(request.systemInstruction.parts[0].text,/do not promise to treat inflammation/);assert.match(request.systemInstruction.parts[0].text,/No need to 'make up for'/);
 });
 
@@ -267,7 +268,7 @@ test('ordering output requires exactly one entry for each diner and drops unknow
   const plan=orderFixture();plan.secret='discard';assert.equal(groupHelpers.parseGroupOrder(JSON.stringify(plan),groupFixture()).secret,undefined);
 });
 function orderHarness({user={id:'user-a'},credit='ok',failure=false}={}){
-  const calls=[];const actions=load('app/eat/order-actions.ts',{'@/lib/group-dining':groupHelpers,'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user},error:null})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},'@/lib/ai/group-order':{generateGroupOrder:async(diners,restaurant,menu)=>{calls.push(['ai',diners,restaurant,menu]);if(failure)throw new Error('provider failure');return orderFixture(diners);}}});
+  const calls=[];const actions=load('app/eat/order-actions.ts',{'@/lib/group-dining':groupHelpers,'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user},error:null})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},'@/lib/ai/group-order':{generateGroupOrder:async(diners,restaurant,menu)=>{calls.push(['ai',diners,restaurant,menu]);if(failure)throw new Error('provider failure');return {plan:orderFixture(diners)};}}});
   const f=new FormData();f.set('diners',JSON.stringify(groupFixture()));f.set('restaurant','Mapped Thai');f.set('cuisine','thai');f.set('consent','yes');return {actions,calls,f};
 }
 test('ordering requires authentication and group consent before AI',async()=>{
@@ -281,7 +282,7 @@ test('ordering forwards every opinion and pasted menu; quota and failures return
 });
 test('ordering provider sees anonymous opinions and explicit menu uncertainty',async()=>{
   let request;const provider=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(orderFixture())}]}}]}));}});
-  const ai=load('lib/ai/group-order.ts',{'server-only':{},'./gemini':provider,'@/lib/group-dining':groupHelpers});
-  await ai.generateGroupOrder(groupFixture(),{name:'Mapped Thai',cuisine:'thai'},'');
+  const ai=load('lib/ai/group-order.ts',{'server-only':{},'./workflow':{runWorkflow:async(options,module,system,parts,schema,validate)=>{assert.equal(module,'group-order');const r=await provider.requestGemini(system,parts,schema);return {value:validate(r.text),trace:[]};}},'@/lib/group-dining':groupHelpers});
+  await ai.generateGroupOrder(groupFixture(),{name:'Mapped Thai',cuisine:'thai'},'',{client:{}});
   const context=JSON.parse(request.contents[0].parts[0].text);assert.equal(context.diners.length,2);assert.equal(context.diners[0].name,undefined);assert.equal(context.diners[1].restrictions,'Peanut allergy');assert.equal(context.self_reported_menu,null);assert.match(request.systemInstruction.parts[0].text,/Never let majority preferences override/);assert.match(request.systemInstruction.parts[0].text,/IF AVAILABLE/);
 });

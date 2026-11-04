@@ -29,6 +29,6 @@ export async function coachMeals(_previous: CoachResult, form: FormData): Promis
   if (creditError) return { error: "AI meal coaching is unavailable. Check the Week 4 Supabase setup." };
   if (credit !== "ok") return { error: credit === "cooldown" ? "Wait 30 seconds between AI requests." : "You’ve reached 10 AI attempts today, shared by meal coaching and post reactions." };
   // Photos/profile/plan are request-only: no Storage upload, row insert or raw-data logging.
-  try { return await generateMealPlan(profile, photos); }
+  try { const result = await generateMealPlan(profile, photos, {client:supabase}); return {plan:result.plan,day:result.day}; }
   catch (error) { return { error: error instanceof Error ? error.message : "Could not build a meal plan. Please try again." }; }
 }

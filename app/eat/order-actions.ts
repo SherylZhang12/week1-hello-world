@@ -15,6 +15,6 @@ export async function suggestOrders(_previous: OrderResult, form: FormData): Pro
   const {data:credit,error} = await supabase.rpc("claim_caption_generation");
   if (error) return {error:"AI ordering ideas are unavailable. Check the Supabase setup."};
   if (credit !== "ok") return {error:credit === "cooldown" ? "Wait 30 seconds between AI requests." : "You’ve reached the shared limit of 10 AI attempts today."};
-  try { return {plan:await generateGroupOrder(diners,{name,cuisine},menu)}; }
+  try { const result=await generateGroupOrder(diners,{name,cuisine},menu,{client:supabase}); return {plan:result.plan}; }
   catch (error) { return {error:error instanceof Error ? error.message : "Could not generate ordering ideas."}; }
 }
