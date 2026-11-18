@@ -17,7 +17,7 @@ const CUISINES: Record<string, string[]> = {
   american: ["american", "美式"], seafood: ["seafood", "海鲜"],
 };
 export type Restaurant = { id: string; name: string; cuisine: string; address: string; lat: number; lon: number; distance: number; reason: string; source: string; maps: string };
-export type SearchResult = { error?: string; restaurants?: Restaurant[]; note?: string; location?: string; diners?: import("./group-dining").Diner[] };
+export type SearchResult = { error?: string; mapUnavailable?: boolean; restaurants?: Restaurant[]; note?: string; location?: string; diners?: import("./group-dining").Diner[] };
 export type OsmElement = { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> };
 export function coordinates(lat: number, lon: number) {
   return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;

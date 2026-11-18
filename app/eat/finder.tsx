@@ -28,7 +28,9 @@ export default function FoodFinder({ initialWants = "", mealDish = "", compact =
       setArea("device"); setInputsChanged(true); setLocating(false); setLocationMessage("Location ready. Submit to search nearby.");
     }, () => { setLocating(false); setLocationMessage("Location access was unavailable. You can still choose a NYC neighborhood."); }, {enableHighAccuracy: false, timeout: 10000, maximumAge: 300000});
   }
-  const dishMaps = mealDish ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${mealDish} restaurants near ${area === "device" && point ? `${point.lat},${point.lon}` : `${area}, New York`}`)}` : "";
+  const mapsArea = area === "device" && point ? `${point.lat},${point.lon}` : `${area}, New York`;
+  const areaMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`restaurants near ${mapsArea}`)}`;
+  const dishMaps = mealDish ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${mealDish} restaurants near ${mapsArea}`)}` : "";
   return <div className={compact ? "finder-layout coach-finder" : "finder-layout"}><form action={data => { setInputsChanged(false); if (groupMode) data.set("diners",JSON.stringify(diners)); action(data); }} onChange={() => setInputsChanged(true)} className="panel caption-form" aria-busy={pending || locating}>
     <h2>{mealDish ? "Where would you like to eat?" : "What are you craving?"}</h2>
     {mealDish && <p className="upload-help">Suggested dish: {mealDish}. Find nearby restaurants by cuisine, or look for this dish on Google Maps.</p>}
@@ -41,10 +43,11 @@ export default function FoodFinder({ initialWants = "", mealDish = "", compact =
     <button type="button" className="text-link" disabled={pending || locating} onClick={locate}>{locating ? "Finding your location…" : "Use my location ↗"}</button><p role="status" className="upload-help">{locationMessage}</p>
     <input type="hidden" name="lat" value={point?.lat ?? ""} /><input type="hidden" name="lon" value={point?.lon ?? ""} />
     <label className="field">How far?<select name="radius" defaultValue="2500" disabled={pending}><option value="1000">Within 1 km</option><option value="2500">Within 2.5 km</option><option value="5000">Within 5 km</option></select></label>
-    <p className="upload-help">Your approximate search location is sent to OpenStreetMap’s Overpass service when you search. It is not added to your profile or posts.</p>
+    <p className="upload-help">Your approximate search location is sent to an OpenStreetMap Overpass provider when you search. It is not added to your profile or posts.</p>
     <button className="button" disabled={pending || locating}>{pending ? "Finding your next bite…" : groupMode ? "Find food for everyone ↗" : "Find my next meal ↗"}</button>
     {dishMaps && <a className="text-link" href={dishMaps} target="_blank" rel="noreferrer">Search this dish on Google Maps ↗</a>}
     {state.error && <p className="notice notice-error" role="alert">{state.error}</p>}
+    {state.mapUnavailable && <p className="upload-help"><a className="text-link" href={areaMaps} target="_blank" rel="noreferrer">Search this area on Google Maps ↗</a> · Google Maps won’t apply group preferences.</p>}
   </form><section aria-live="polite" aria-busy={pending}>
     <p className="eyebrow">YOUR NEXT BITE</p><h2>{pending ? "Searching nearby…" : state.restaurants ? `Food near ${state.location}` : "Less scrolling. More eating."}</h2>
     {inputsChanged && state.restaurants && <p className="notice">Search options changed. Results below are from your previous search; submit again to update them.</p>}
@@ -53,6 +56,6 @@ export default function FoodFinder({ initialWants = "", mealDish = "", compact =
     {state.restaurants?.length === 0 && !pending && <p className="notice">No mapped spots matched the cuisine wishes and skips in this radius. Review conflicting preferences together, try a larger radius, or leave cuisine wishes open. We have not silently removed anyone’s skips.</p>}
     {!pending && state.restaurants && <><ul className="restaurant-results">{state.restaurants.map(r => <li className="panel restaurant-card" key={r.id}><span className="eyebrow">{r.distance < 1000 ? `${r.distance} m` : `${(r.distance / 1000).toFixed(1)} km`} away · approximate</span><h3>{r.name}</h3><p>{r.cuisine}</p><p>{r.address}</p><p className="match-reason">{r.reason}</p>{"matchedDiners" in r && <p className="upload-help">Wishes matched: {(r as GroupRestaurant).matchedDiners.join(", ") || "No specific cuisine wishes"}. {(r as GroupRestaurant).unmatchedDiners.length > 0 && `Compromise for: ${(r as GroupRestaurant).unmatchedDiners.join(", ")}.`}</p>}<div className="caption-card-actions"><a className="text-link" href={r.maps} target="_blank" rel="noreferrer">View on Google Maps ↗</a><Link className="text-link" href={`/captions?restaurant=${encodeURIComponent(r.name)}#create-caption`}>Ate here? Share your meal ↗</Link><a className="text-link" href={r.source} target="_blank" rel="noreferrer">Map source</a></div>{state.diners && <OrderSuggestions key={`${r.id}-${JSON.stringify(state.diners)}`} restaurant={r} diners={state.diners} disabled={inputsChanged || pending} />}</li>)}</ul><p className="upload-help">{state.note}</p></>}
     <p className="upload-help">Restaurant data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>. Community-maintained listings may be incomplete or outdated.</p>
-    <a className="text-link" href="https://www.google.com/maps/search/restaurants+near+me/" target="_blank" rel="noreferrer">Explore on Google Maps ↗</a>
+    <a className="text-link" href={areaMaps} target="_blank" rel="noreferrer">Explore on Google Maps ↗</a>
   </section></div>;
 }

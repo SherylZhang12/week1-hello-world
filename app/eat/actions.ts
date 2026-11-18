@@ -29,16 +29,34 @@ export async function findRestaurants(_previous: SearchResult, form: FormData): 
   if (credit !== "ok") return { error: credit === "cooldown" ? "Wait 15 seconds before searching again." : "Today’s restaurant search limit is reached. Please try tomorrow." };
   // Rounded location leaves the browser only on submit. Cache shared map queries for one hour.
   const roundedLat = Number(lat.toFixed(3)), roundedLon = Number(lon.toFixed(3));
-  const query = `[out:json][timeout:20][maxsize:16777216];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:${radius + 150},${roundedLat},${roundedLon});out center tags 1000;`;
-  try {
-    const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
-      headers: { "User-Agent": "Foodfolio-coursework/1.0 (https://github.com/SherylZhang12/week1-hello-world)" },
-      next: { revalidate: 3600 }, signal: AbortSignal.timeout(25000),
-    });
-    if (!response.ok) return { error: "The map service is busy. Try again later or search directly on Google Maps." };
-    const data = await response.json() as { elements?: OsmElement[]; remark?: string };
-    if (!Array.isArray(data.elements) || data.remark) return { error: "The map search did not finish. Try a smaller radius or come back later." };
-    const restaurants = diners ? rankForGroup(data.elements, roundedLat, roundedLon, diners, radius) : rankRestaurants(data.elements, roundedLat, roundedLon, wants, avoids, radius);
-    return { restaurants, diners: diners || [{id:"you",name:"You",wants,avoids,restrictions:"",notes:""}], location: usingDevice ? "your approximate location" : area!.name, note: diners ? "Group results prioritize the number of people whose cuisine wishes match, then distance. Everyone’s recognized cuisine skips are applied. Ingredient exclusions, allergies, spice, budgets and other notes cannot be verified from map tags; all opinions are passed to the AI only when you request ordering ideas. Menus and prices are not verified. If wishes conflict, results show a compromise rather than claiming everyone is satisfied." : `Cuisine filters applied — want: ${desired.join(", ") || "any"}; skip: ${excluded.join(", ") || "none"}. Other words are not used as filters. Approximate straight-line distances. Menu items, spice levels, prices and opening hours are not verified. Check with the restaurant for dietary needs.` };
-  } catch { return { error: "Could not reach the map service. Try again later or open Google Maps." }; }
+  let elements: OsmElement[] | undefined;
+  const providers = [
+    { host: "overpass-api.de", seconds: 8 },
+    { host: "overpass.private.coffee", seconds: 12 },
+  ];
+  for (const { host, seconds } of providers) {
+    const query = `[out:json][timeout:${seconds - 2}][maxsize:16777216];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:${radius + 150},${roundedLat},${roundedLon});out center tags 1000;`;
+    try {
+      const response = await fetch(`https://${host}/api/interpreter?data=${encodeURIComponent(query)}`, {
+        headers: { "User-Agent": "Foodfolio-coursework/1.0 (https://github.com/SherylZhang12/week1-hello-world)" },
+        next: { revalidate: 3600 }, signal: AbortSignal.timeout(seconds * 1000),
+      });
+      if (!response.ok) {
+        console.warn("Restaurant map request failed", host, response.status);
+        continue;
+      }
+      const data = await response.json() as { elements?: OsmElement[]; remark?: string } | null;
+      if (!Array.isArray(data?.elements) || data.remark) {
+        console.warn("Restaurant map response incomplete", host);
+        continue;
+      }
+      elements = data.elements;
+      break;
+    } catch (error) {
+      console.warn("Restaurant map request unavailable", host, error instanceof Error ? error.name : "UnknownError");
+    }
+  }
+  if (!elements) return { error: "Restaurant results are temporarily unavailable. You can search this area on Google Maps below.", mapUnavailable: true };
+  const restaurants = diners ? rankForGroup(elements, roundedLat, roundedLon, diners, radius) : rankRestaurants(elements, roundedLat, roundedLon, wants, avoids, radius);
+  return { restaurants, diners: diners || [{id:"you",name:"You",wants,avoids,restrictions:"",notes:""}], location: usingDevice ? "your approximate location" : area!.name, note: diners ? "Group results prioritize the number of people whose cuisine wishes match, then distance. Everyone’s recognized cuisine skips are applied. Ingredient exclusions, allergies, spice, budgets and other notes cannot be verified from map tags; all opinions are passed to the AI only when you request ordering ideas. Menus and prices are not verified. If wishes conflict, results show a compromise rather than claiming everyone is satisfied." : `Cuisine filters applied — want: ${desired.join(", ") || "any"}; skip: ${excluded.join(", ") || "none"}. Other words are not used as filters. Approximate straight-line distances. Menu items, spice levels, prices and opening hours are not verified. Check with the restaurant for dietary needs.` };
 }

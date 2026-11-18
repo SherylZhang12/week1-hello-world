@@ -146,6 +146,18 @@ test('restaurant quota and provider failure never return fictional restaurants',
   const failed=finderHarness({fetcher:async()=>new Response('{}',{status:429})});assert.ok((await failed.actions.findRestaurants({},failed.f)).error);
   const partial=finderHarness({fetcher:async()=>new Response(JSON.stringify({elements:[restaurantElement(1,'Partial','pizza')],remark:'timeout'}))});assert.ok((await partial.actions.findRestaurants({},partial.f)).error);
 });
+test('restaurant search recovers from timeout using the backup without charging twice',async()=>{
+  const hosts=[];
+  const h=finderHarness({fetcher:async(url)=>{
+    hosts.push(new URL(url).hostname);
+    if(hosts.length===1) throw new DOMException('Timed out','TimeoutError');
+    return new Response(JSON.stringify({elements:[restaurantElement(1,'Backup Pizza','pizza')]}));
+  }});
+  const result=await h.actions.findRestaurants({},h.f);
+  assert.deepEqual(hosts,['overpass-api.de','overpass.private.coffee']);
+  assert.equal(h.calls.filter(call=>call==='credit').length,1);
+  assert.equal(result.restaurants[0].name,'Backup Pizza');
+});
 test('restaurant search caches bounded query and returns only mapped candidates',async()=>{
   const h=finderHarness({fetcher:async(url,options)=>{assert.match(decodeURIComponent(url),/around:2650,40.715,-73.985/);assert.equal(options.next.revalidate,3600);return new Response(JSON.stringify({elements:[restaurantElement(1,'Mapped Pizza','pizza')]}));}});
   const result=await h.actions.findRestaurants({},h.f);assert.equal(result.restaurants[0].name,'Mapped Pizza');assert.match(result.note,/not verified/);
