@@ -131,9 +131,9 @@ test('dog and cat provider requests preserve selected persona and pet-specific i
   for(const persona of ['Cat','Dog']){let request;const ai=load('lib/ai/gemini.ts',{'server-only':{},fetch:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{content:{parts:[{text:'{"caption":"My human has found another plate to photograph. Where is my invitation?"}' }]}}]}));}});await ai.generateChefReview(new Uint8Array([255,216,255]),'image/jpeg','','Pizza',persona,'Roast','English');assert.equal(JSON.parse(request.contents[0].parts[0].text).persona,persona);assert.match(request.systemInstruction.parts[0].text,/found their phone/);assert.match(request.systemInstruction.parts[0].text,/never suggest feeding them/);}
 });
 const groupHelpers=load('lib/group-dining.ts',{'./restaurant-search':restaurants});
-function finderHarness({user={id:'user-a'},credit='ok',fetcher=async()=>new Response(JSON.stringify({elements:[restaurantElement(1,'Mapped Pizza','pizza')]}))}={}) {
+function finderHarness({city=()=>[],user={id:'user-a'},credit='ok',fetcher=async()=>new Response(JSON.stringify({elements:[restaurantElement(1,'Mapped Pizza','pizza')]}))}={}) {
   const calls=[];
-  const actions=load('app/eat/actions.ts',{'@/lib/restaurant-search':restaurants,'@/lib/group-dining':groupHelpers,'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user}})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},fetch:async(...args)=>{calls.push('fetch');return fetcher(...args);}});
+  const actions=load('app/eat/actions.ts',{'@/lib/restaurant-search':restaurants,'@/lib/group-dining':groupHelpers,'@/lib/nyc-restaurants':{cityRestaurants:city},'@/lib/supabase/server':{createClient:async()=>({auth:{getUser:async()=>({data:{user}})},rpc:async()=>{calls.push('credit');return {data:credit,error:null};}})},fetch:async(...args)=>{calls.push('fetch');return fetcher(...args);}});
   const f=new FormData();f.set('area','Lower East Side');f.set('radius','2500');f.set('wants','pizza');return {actions,calls,f};
 }
 test('restaurant search authenticates and validates before provider access',async()=>{
@@ -297,4 +297,14 @@ test('ordering provider sees anonymous opinions and explicit menu uncertainty',a
   const ai=load('lib/ai/group-order.ts',{'server-only':{},'./workflow':{runWorkflow:async(options,module,system,parts,schema,validate)=>{assert.equal(module,'group-order');const r=await provider.requestGemini(system,parts,schema);return {value:validate(r.text),trace:[]};}},'@/lib/group-dining':groupHelpers});
   await ai.generateGroupOrder(groupFixture(),{name:'Mapped Thai',cuisine:'thai'},'',{client:{}});
   const context=JSON.parse(request.contents[0].parts[0].text);assert.equal(context.diners.length,2);assert.equal(context.diners[0].name,undefined);assert.equal(context.diners[1].restrictions,'Peanut allergy');assert.equal(context.self_reported_menu,null);assert.match(request.systemInstruction.parts[0].text,/Never let majority preferences override/);assert.match(request.systemInstruction.parts[0].text,/IF AVAILABLE/);
+});
+
+test('Lower East Side group search ranks real city records without either map provider',async()=>{
+  const {cityRestaurants}=load('lib/nyc-restaurants.ts',{'server-only':{},'@/data/nyc-restaurants.json':{default:JSON.parse(fs.readFileSync('data/nyc-restaurants.json'))},'./restaurant-search':restaurants});
+  const h=finderHarness({city:cityRestaurants,fetcher:async()=>{throw new Error('Offline')}});
+  h.f.set('diners',JSON.stringify([{id:'a',name:'A',wants:'Japanese',avoids:'pizza',restrictions:'',notes:''},{id:'b',name:'B',wants:'Thai',avoids:'',restrictions:'',notes:''}]));
+  const r=await h.actions.findRestaurants({},h.f);
+  assert.equal(r.provider,'nyc');assert.ok(r.restaurants.length);
+  assert.ok(r.restaurants.every(x=>x.distance<=2500 && x.source.includes('43nn-pn8j') && x.groupScore>=1));
+  assert.deepEqual(h.calls,['credit']);
 });

@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { coordinates, parsePreferences, rankRestaurants, SEARCH_AREAS, type SearchResult, type OsmElement } from "@/lib/restaurant-search";
 
+import { cityRestaurants } from "@/lib/nyc-restaurants";
 import { readDiners, rankForGroup, type Diner } from "@/lib/group-dining";
 
 export async function findRestaurants(_previous: SearchResult, form: FormData): Promise<SearchResult> {
@@ -29,12 +30,15 @@ export async function findRestaurants(_previous: SearchResult, form: FormData): 
   if (credit !== "ok") return { error: credit === "cooldown" ? "Wait 15 seconds before searching again." : "Today’s restaurant search limit is reached. Please try tomorrow." };
   // Rounded location leaves the browser only on submit. Cache shared map queries for one hour.
   const roundedLat = Number(lat.toFixed(3)), roundedLon = Number(lon.toFixed(3));
-  let elements: OsmElement[] | undefined;
+  // Named NYC searches use a bundled city register so outages cannot block them.
+  const city = area ? cityRestaurants(roundedLat, roundedLon, radius) : [];
+  let elements: OsmElement[] | undefined = city.length ? city : undefined;
   const providers = [
     { host: "overpass-api.de", seconds: 8 },
     { host: "overpass.private.coffee", seconds: 12 },
   ];
   for (const { host, seconds } of providers) {
+    if (elements) break;
     const query = `[out:json][timeout:${seconds - 2}][maxsize:16777216];nwr["amenity"~"^(restaurant|fast_food|cafe)$"]["name"](around:${radius + 150},${roundedLat},${roundedLon});out center tags 1000;`;
     try {
       const response = await fetch(`https://${host}/api/interpreter?data=${encodeURIComponent(query)}`, {
@@ -58,5 +62,5 @@ export async function findRestaurants(_previous: SearchResult, form: FormData): 
   }
   if (!elements) return { error: "Restaurant results are temporarily unavailable. You can search this area on Google Maps below.", mapUnavailable: true };
   const restaurants = diners ? rankForGroup(elements, roundedLat, roundedLon, diners, radius) : rankRestaurants(elements, roundedLat, roundedLon, wants, avoids, radius);
-  return { restaurants, diners: diners || [{id:"you",name:"You",wants,avoids,restrictions:"",notes:""}], location: usingDevice ? "your approximate location" : area!.name, note: diners ? "Group results prioritize the number of people whose cuisine wishes match, then distance. Everyone’s recognized cuisine skips are applied. Ingredient exclusions, allergies, spice, budgets and other notes cannot be verified from map tags; all opinions are passed to the AI only when you request ordering ideas. Menus and prices are not verified. If wishes conflict, results show a compromise rather than claiming everyone is satisfied." : `Cuisine filters applied — want: ${desired.join(", ") || "any"}; skip: ${excluded.join(", ") || "none"}. Other words are not used as filters. Approximate straight-line distances. Menu items, spice levels, prices and opening hours are not verified. Check with the restaurant for dietary needs.` };
+  return { restaurants, diners: diners || [{id:"you",name:"You",wants,avoids,restrictions:"",notes:""}], provider: elements === city ? "nyc" : "osm", location: usingDevice ? "your approximate location" : area!.name, note: diners ? "Group results prioritize the number of people whose cuisine wishes match, then distance. Everyone’s recognized cuisine skips are applied. Ingredient exclusions, allergies, spice, budgets and other notes cannot be verified from restaurant listings; all opinions are passed to the AI only when you request ordering ideas. Menus and prices are not verified. If wishes conflict, results show a compromise rather than claiming everyone is satisfied." : `Cuisine filters applied — want: ${desired.join(", ") || "any"}; skip: ${excluded.join(", ") || "none"}. Other words are not used as filters. Approximate straight-line distances. Menu items, spice levels, prices and opening hours are not verified. Check with the restaurant for dietary needs.` };
 }

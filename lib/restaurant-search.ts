@@ -17,7 +17,7 @@ const CUISINES: Record<string, string[]> = {
   american: ["american", "美式"], seafood: ["seafood", "海鲜"],
 };
 export type Restaurant = { id: string; name: string; cuisine: string; address: string; lat: number; lon: number; distance: number; reason: string; source: string; maps: string };
-export type SearchResult = { error?: string; mapUnavailable?: boolean; restaurants?: Restaurant[]; note?: string; location?: string; diners?: import("./group-dining").Diner[] };
+export type SearchResult = { error?: string; mapUnavailable?: boolean; provider?: "nyc" | "osm"; restaurants?: Restaurant[]; note?: string; location?: string; diners?: import("./group-dining").Diner[] };
 export type OsmElement = { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> };
 export function coordinates(lat: number, lon: number) {
   return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
@@ -56,8 +56,8 @@ export function rankRestaurants(elements: OsmElement[], lat: number, lon: number
     const address = [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ");
     const name = (tags["name:en"] || tags.name).slice(0, 120);
     restaurants.push({ id: `${element.type}/${element.id}`, name, cuisine: tags.cuisine?.replaceAll(";", " · ").replaceAll("_", " ") || "Cuisine not listed", address: address || "Street address not listed — view map", lat: point.lat, lon: point.lon, distance,
-      reason: matches.length ? `Tagged ${matches.join(" / ")} on OpenStreetMap; within your search radius.` : "Nearby mapped food spot; ranked by distance.",
-      source: `https://www.openstreetmap.org/${element.type}/${element.id}`,
+      reason: matches.length ? `Tagged ${matches.join(" / ")} by the data source; within your search radius.` : "Nearby mapped food spot; ranked by distance.",
+      source: element.type === "nyc" ? "https://data.cityofnewyork.us/Health/43nn-pn8j" : `https://www.openstreetmap.org/${element.type}/${element.id}`,
       maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${point.lat},${point.lon}`)}` });
   }
   return restaurants.sort((a, b) => a.distance - b.distance).slice(0, limit);
